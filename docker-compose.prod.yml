@@ -1,0 +1,23 @@
+version: '3.8'
+
+# Production overrides for docker-compose.yml
+services:
+  postgres:
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init/prod:/docker-entrypoint-initdb.d  # Use production init scripts
+      - ./database/scripts:/scripts
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod  # Use production Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://cinema_user:cinema_pass@postgres:5432/cinema_management
+    command: npm start
+    volumes: []  # Remove volume mounts for production
+
+  pgadmin:
+    profiles:
+      - debug  # Only start PgAdmin when debug profile is used

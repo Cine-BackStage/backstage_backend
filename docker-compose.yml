@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: cinema_postgres
+    environment:
+      POSTGRES_DB: cinema_management
+      POSTGRES_USER: cinema_user
+      POSTGRES_PASSWORD: cinema_pass
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+      - ./database/scripts:/scripts
+    networks:
+      - cinema_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cinema_user -d cinema_management"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cinema_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@cinema.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - cinema_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: cinema_api
+    environment:
+      DATABASE_URL: postgresql://cinema_user:cinema_pass@postgres:5432/cinema_management
+      NODE_ENV: development
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - cinema_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+networks:
+  cinema_network:
+    driver: bridge
