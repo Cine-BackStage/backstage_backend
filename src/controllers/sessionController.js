@@ -1,10 +1,10 @@
-const Session = require('../models/Session');
+const SessionPrisma = require('../models/SessionPrisma');
 const { validateSession } = require('../utils/validation');
 
 class SessionController {
   async getAllSessions(req, res) {
     try {
-      const sessions = await Session.findAll();
+      const sessions = await SessionPrisma.findAllWithPricing();
       res.json({
         success: true,
         data: sessions,
@@ -23,8 +23,8 @@ class SessionController {
   async getSessionById(req, res) {
     try {
       const { id } = req.params;
-      const session = await Session.findById(id);
-      
+      const session = await SessionPrisma.findById(id);
+
       if (!session) {
         return res.status(404).json({
           success: false,
@@ -49,8 +49,8 @@ class SessionController {
   async getSessionSeats(req, res) {
     try {
       const { id } = req.params;
-      const seats = await Session.getAvailableSeats(id);
-      
+      const seats = await SessionPrisma.getAvailableSeats(id);
+
       // Group seats by row for better frontend handling
       const seatMap = seats.reduce((acc, seat) => {
         if (!acc[seat.row_label]) {
@@ -90,7 +90,7 @@ class SessionController {
         });
       }
 
-      const session = await Session.create(value);
+      const session = await SessionPrisma.create(value);
       res.status(201).json({
         success: true,
         data: session,
@@ -119,7 +119,7 @@ class SessionController {
         });
       }
 
-      const session = await Session.update(id, value);
+      const session = await SessionPrisma.update(id, value);
       
       if (!session) {
         return res.status(404).json({
@@ -146,7 +146,7 @@ class SessionController {
   async deleteSession(req, res) {
     try {
       const { id } = req.params;
-      const session = await Session.delete(id);
+      const session = await SessionPrisma.delete(id);
       
       if (!session) {
         return res.status(404).json({

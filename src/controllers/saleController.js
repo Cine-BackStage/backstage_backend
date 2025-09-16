@@ -1,4 +1,4 @@
-const Sale = require('../models/Sale');
+const SalePrisma = require('../models/SalePrisma');
 const { validateSale, validateSaleItem, validatePayment } = require('../utils/validation');
 
 class SaleController {
@@ -7,7 +7,7 @@ class SaleController {
       const limit = parseInt(req.query.limit) || 50;
       const offset = parseInt(req.query.offset) || 0;
       
-      const sales = await Sale.findAll(limit, offset);
+      const sales = await SalePrisma.findAll(limit, offset);
       res.json({
         success: true,
         data: sales,
@@ -31,7 +31,7 @@ class SaleController {
   async getSaleById(req, res) {
     try {
       const { id } = req.params;
-      const sale = await Sale.findById(id);
+      const sale = await SalePrisma.findById(id);
       
       if (!sale) {
         return res.status(404).json({
@@ -42,8 +42,8 @@ class SaleController {
 
       // Get sale items and payments
       const [items, payments] = await Promise.all([
-        Sale.getSaleItems(id),
-        Sale.getSalePayments(id)
+        SalePrisma.getSaleItems(id),
+        SalePrisma.getSalePayments(id)
       ]);
 
       res.json({
@@ -75,7 +75,7 @@ class SaleController {
         });
       }
 
-      const sale = await Sale.create(value);
+      const sale = await SalePrisma.create(value);
       res.status(201).json({
         success: true,
         data: sale,
@@ -104,7 +104,7 @@ class SaleController {
         });
       }
 
-      const item = await Sale.addItem(saleId, value);
+      const item = await SalePrisma.addItem(saleId, value);
       res.status(201).json({
         success: true,
         data: item,
@@ -123,7 +123,7 @@ class SaleController {
   async removeItemFromSale(req, res) {
     try {
       const { saleId, itemId } = req.params;
-      const item = await Sale.removeItem(saleId, itemId);
+      const item = await SalePrisma.removeItem(saleId, itemId);
       
       if (!item) {
         return res.status(404).json({
@@ -158,7 +158,7 @@ class SaleController {
         });
       }
 
-      const result = await Sale.applyDiscount(saleId, discount_code);
+      const result = await SalePrisma.applyDiscount(saleId, discount_code);
       res.json({
         success: true,
         ...result
@@ -199,7 +199,7 @@ class SaleController {
         });
       }
 
-      const sale = await Sale.finalize(saleId, value.payments);
+      const sale = await SalePrisma.finalize(saleId, value.payments);
       res.json({
         success: true,
         data: sale,
@@ -231,7 +231,7 @@ class SaleController {
       const { saleId } = req.params;
       const { reason } = req.body;
       
-      const sale = await Sale.cancel(saleId, reason);
+      const sale = await SalePrisma.cancel(saleId, reason);
       
       if (!sale) {
         return res.status(404).json({

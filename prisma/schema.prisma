@@ -1,0 +1,332 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum SessionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  CANCELED
+  COMPLETED
+
+  @@map("session_status")
+}
+
+enum RoomType {
+  TWO_D
+  THREE_D
+  EXTREME
+
+  @@map("room_type")
+}
+
+enum SaleStatus {
+  OPEN
+  FINALIZED
+  CANCELED
+  REFUNDED
+
+  @@map("sale_status")
+}
+
+// Models
+model Movie {
+  id         Int       @id @default(autoincrement())
+  title      String    @db.VarChar(200)
+  durationMin Int      @map("duration_min")
+  genre      String?   @db.VarChar(80)
+  description String?  @db.Text
+  rating     String?   @db.VarChar(10)
+  posterUrl  String?   @map("poster_url") @db.VarChar(500)
+  isActive   Boolean?  @default(true) @map("is_active")
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt  DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relations
+  sessions   Session[]
+
+  @@map("movie")
+}
+
+model SeatMap {
+  id      Int @id @default(autoincrement())
+  rows    Int
+  cols    Int
+  version Int
+
+  // Relations
+  rooms   Room[]
+  seats   Seat[]
+  tickets Ticket[]
+
+  @@map("seat_map")
+}
+
+model Room {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(80)
+  capacity  Int
+  roomType  RoomType @map("room_type")
+  seatmapId Int?     @map("seatmap_id")
+
+  // Relations
+  seatMap  SeatMap? @relation(fields: [seatmapId], references: [id])
+  sessions Session[]
+
+  @@map("room")
+}
+
+model Seat {
+  seatmapId    Int     @map("seatmap_id")
+  id           String  @db.VarChar(10)
+  rowLabel     String  @map("row_label") @db.VarChar(5)
+  number       Int
+  isAccessible Boolean @default(false) @map("is_accessible")
+
+  // Relations
+  seatMap SeatMap  @relation(fields: [seatmapId], references: [id])
+  tickets Ticket[]
+
+  @@id([seatmapId, id])
+  @@map("seat")
+}
+
+model Session {
+  id        Int           @id @default(autoincrement())
+  movieId   Int?          @map("movie_id")
+  roomId    Int?          @map("room_id")
+  startTime DateTime      @map("start_time") @db.Timestamp(6)
+  endTime   DateTime      @map("end_time") @db.Timestamp(6)
+  status    SessionStatus @default(SCHEDULED)
+
+  // Relations
+  movie   Movie?   @relation(fields: [movieId], references: [id])
+  room    Room?    @relation(fields: [roomId], references: [id])
+  tickets Ticket[]
+
+  @@index([movieId, roomId], map: "idx_session_movie_room")
+  @@index([startTime], map: "idx_session_start_time")
+  @@map("session")
+}
+
+model Ticket {
+  id        Int      @id @default(autoincrement())
+  sessionId Int?     @map("session_id")
+  seatmapId Int?     @map("seatmap_id")
+  seatId    String?  @map("seat_id") @db.VarChar(10)
+  price     Decimal  @db.Decimal(10, 2)
+  issuedAt  DateTime @default(now()) @map("issued_at") @db.Timestamp(6)
+
+  // Relations
+  session Session?  @relation(fields: [sessionId], references: [id])
+  seatMap SeatMap?  @relation(fields: [seatmapId], references: [id])
+  seat    Seat?     @relation(fields: [seatmapId, seatId], references: [seatmapId, id])
+
+  @@unique([sessionId, seatmapId, seatId])
+  @@index([sessionId], map: "idx_ticket_session")
+  @@map("ticket")
+}
+
+model RoomTypePrice {
+  roomType RoomType @id @map("room_type")
+  price    Decimal  @db.Decimal(10, 2)
+
+  @@map("room_type_price")
+}
+
+model Person {
+  cpf      String @id @db.VarChar(11)
+  fullName String @map("full_name") @db.VarChar(200)
+  email    String @db.VarChar(200)
+  phone    String @db.VarChar(20)
+
+  // Relations
+  customer Customer?
+  employee Employee?
+  admin    Admin?
+
+  @@map("person")
+}
+
+model Customer {
+  cpf       String    @id @db.VarChar(11)
+  birthDate DateTime? @map("birth_date") @db.Date
+
+  // Relations
+  person Person @relation(fields: [cpf], references: [cpf])
+  sales  Sale[]
+
+  @@map("customer")
+}
+
+model Employee {
+  cpf        String    @id @db.VarChar(11)
+  employeeId String    @unique @map("employee_id") @db.VarChar(20)
+  role       String    @db.VarChar(80)
+  hireDate   DateTime  @map("hire_date") @db.Date
+  isActive   Boolean   @default(true) @map("is_active")
+
+  // Relations
+  person Person @relation(fields: [cpf], references: [cpf])
+  sales  Sale[] @relation("CashierSales")
+
+  @@map("employee")
+}
+
+model Admin {
+  cpf         String @id @db.VarChar(11)
+  permissions Json
+
+  // Relations
+  person Person @relation(fields: [cpf], references: [cpf])
+
+  @@map("admin")
+}
+
+model InventoryItem {
+  sku          String @id @db.VarChar(50)
+  name         String @db.VarChar(200)
+  unitPrice    Decimal @map("unit_price") @db.Decimal(10, 2)
+  qtyOnHand    Int    @map("qty_on_hand")
+  reorderLevel Int    @map("reorder_level")
+  barcode      String? @db.VarChar(50)
+
+  // Relations
+  food         Food?
+  collectable  Collectable?
+  saleItems    SaleItem[]
+  adjustments  InventoryAdjustment[]
+
+  @@map("inventory_item")
+}
+
+model Food {
+  sku        String    @id @db.VarChar(50)
+  expiryDate DateTime? @map("expiry_date") @db.Date
+  isCombo    Boolean   @default(false) @map("is_combo")
+
+  // Relations
+  item InventoryItem @relation(fields: [sku], references: [sku])
+
+  @@map("food")
+}
+
+model Collectable {
+  sku      String @id @db.VarChar(50)
+  category String @db.VarChar(100)
+  brand    String @db.VarChar(100)
+
+  // Relations
+  item InventoryItem @relation(fields: [sku], references: [sku])
+
+  @@map("collectable")
+}
+
+model DiscountCode {
+  code        String    @id @db.VarChar(50)
+  description String    @db.VarChar(200)
+  type        String    @db.VarChar(20)
+  value       Decimal   @db.Decimal(10, 2)
+  validFrom   DateTime  @map("valid_from") @db.Timestamp(6)
+  validTo     DateTime  @map("valid_to") @db.Timestamp(6)
+
+  // Relations
+  saleDiscounts SaleDiscount[]
+
+  @@map("discount_code")
+}
+
+model Sale {
+  id            Int        @id @default(autoincrement())
+  buyerCpf      String?    @map("buyer_cpf") @db.Char(11)
+  cashierCpf    String?    @map("cashier_cpf") @db.Char(11)
+  subTotal      Decimal    @default(0) @map("sub_total") @db.Decimal(10, 2)
+  discountTotal Decimal    @default(0) @map("discount_total") @db.Decimal(10, 2)
+  grandTotal    Decimal    @default(0) @map("grand_total") @db.Decimal(10, 2)
+  status        SaleStatus @default(OPEN)
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamp(6)
+
+  // Relations
+  buyer     Customer? @relation(fields: [buyerCpf], references: [cpf])
+  cashier   Employee? @relation("CashierSales", fields: [cashierCpf], references: [cpf])
+  items     SaleItem[]
+  discounts SaleDiscount[]
+  payments  Payment[]
+
+  @@index([buyerCpf], map: "idx_sale_buyer")
+  @@index([createdAt], map: "idx_sale_created_at")
+  @@map("sale")
+}
+
+model SaleItem {
+  id       Int     @id @default(autoincrement())
+  saleId   Int     @map("sale_id")
+  sku      String  @db.VarChar(50)
+  quantity Int
+  price    Decimal @db.Decimal(10, 2)
+
+  // Relations
+  sale Sale          @relation(fields: [saleId], references: [id])
+  item InventoryItem @relation(fields: [sku], references: [sku])
+
+  @@map("sale_item")
+}
+
+model SaleDiscount {
+  saleId Int    @map("sale_id")
+  code   String @db.VarChar(50)
+
+  // Relations
+  sale         Sale         @relation(fields: [saleId], references: [id])
+  discountCode DiscountCode @relation(fields: [code], references: [code])
+
+  @@id([saleId, code])
+  @@map("sale_discount")
+}
+
+model Payment {
+  id            Int      @id @default(autoincrement())
+  saleId        Int      @map("sale_id")
+  paymentMethod String   @map("payment_method") @db.VarChar(50)
+  amount        Decimal  @db.Decimal(10, 2)
+  processedAt   DateTime @default(now()) @map("processed_at") @db.Timestamp(6)
+
+  // Relations
+  sale Sale @relation(fields: [saleId], references: [id])
+
+  @@map("payment")
+}
+
+model InventoryAdjustment {
+  id          Int      @id @default(autoincrement())
+  sku         String   @db.VarChar(50)
+  qtyChange   Int      @map("qty_change")
+  reason      String   @db.VarChar(200)
+  adjustedBy  String?  @map("adjusted_by") @db.VarChar(11)
+  adjustedAt  DateTime @default(now()) @map("adjusted_at") @db.Timestamp(6)
+
+  // Relations
+  item InventoryItem @relation(fields: [sku], references: [sku])
+
+  @@map("inventory_adjustment")
+}
+
+model AuditLog {
+  id           Int      @id @default(autoincrement())
+  actorCpf     String   @map("actor_cpf") @db.VarChar(11)
+  action       String   @db.VarChar(100)
+  targetType   String   @map("target_type") @db.VarChar(50)
+  targetId     String?  @map("target_id") @db.VarChar(100)
+  timestamp    DateTime @default(now()) @db.Timestamp(6)
+  metadataJson Json     @map("metadata_json")
+
+  @@map("audit_log")
+}

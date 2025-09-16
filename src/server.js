@@ -8,6 +8,7 @@ const routes = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { specs, swaggerUi } = require('./config/swagger');
+const { databaseService } = require('./database/prisma');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -80,15 +81,30 @@ app.get('/', (req, res) => {
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    environment: process.env.NODE_ENV || 'development'
-  });
+app.get('/health', async (req, res) => {
+  try {
+    const dbHealth = await databaseService.health();
+
+    res.json({
+      success: true,
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      environment: process.env.NODE_ENV || 'development',
+      database: dbHealth
+    });
+  } catch (error) {
+    res.status(503).json({
+      success: false,
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      environment: process.env.NODE_ENV || 'development',
+      database: { status: 'unhealthy', error: error.message }
+    });
+  }
 });
 
 // 404 handler
@@ -104,25 +120,44 @@ app.use('*', (req, res) => {
 // Global error handler
 app.use(errorHandler);
 
+// Initialize Prisma connection and start server
+const startServer = async () => {
+  try {
+    await databaseService.connect();
+    databaseService.handleShutdown();
+
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🎬 Cinema Management API is running on port ${PORT}`);
+      console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📊 Health check available at: http://localhost:${PORT}/health`);
+      console.log(`📋 API documentation at: http://localhost:${PORT}/api/docs`);
+    });
+
+    return server;
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
 // Start server
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🎬 Cinema Management API is running on port ${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📊 Health check available at: http://localhost:${PORT}/health`);
-  console.log(`📋 API documentation at: http://localhost:${PORT}/api/docs`);
-});
+const serverPromise = startServer();
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down gracefully');
-  server.close(() => {
+  const server = await serverPromise;
+  server.close(async () => {
+    await databaseService.disconnect();
     console.log('Process terminated');
   });
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('SIGINT received, shutting down gracefully');
-  server.close(() => {
+  const server = await serverPromise;
+  server.close(async () => {
+    await databaseService.disconnect();
     console.log('Process terminated');
   });
 });

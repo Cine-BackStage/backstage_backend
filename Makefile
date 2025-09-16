@@ -112,6 +112,21 @@ db-shell:
 	@echo "💡 Use \\q to exit"
 	@docker-compose exec postgres psql -U cinema_user -d cinema_management
 
+prisma-pull:
+	@echo "🔄 Pulling database schema into Prisma..."
+	@docker-compose exec api npx prisma db pull
+	@echo "✅ Prisma schema generated from database"
+
+prisma-generate:
+	@echo "⚙️ Generating Prisma client..."
+	@docker-compose exec api npx prisma generate
+	@echo "✅ Prisma client generated"
+
+prisma-studio:
+	@echo "🎨 Starting Prisma Studio..."
+	@echo "🌐 Prisma Studio will be available at: http://localhost:5555"
+	@docker-compose exec api npx prisma studio --port 5555
+
 db-reset:
 	@echo "⚠️  WARNING: This will delete ALL data!"
 	@read -p "Are you sure you want to reset the database? (y/N): " confirm && \

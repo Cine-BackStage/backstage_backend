@@ -1,4 +1,4 @@
-const Movie = require('../models/Movie');
+const MoviePrisma = require('../models/MoviePrisma');
 const { validateMovie } = require('../utils/validation');
 
 class MovieController {
@@ -17,7 +17,7 @@ class MovieController {
         }
       });
 
-      const movies = await Movie.findAll(filters);
+      const movies = await MoviePrisma.findAll(filters);
       res.json({
         success: true,
         data: movies,
@@ -36,7 +36,7 @@ class MovieController {
   async getMovieById(req, res) {
     try {
       const { id } = req.params;
-      const movie = await Movie.findById(id);
+      const movie = await MoviePrisma.findById(id);
       
       if (!movie) {
         return res.status(404).json({
@@ -70,7 +70,7 @@ class MovieController {
         });
       }
 
-      const movies = await Movie.findByTitle(title);
+      const movies = await MoviePrisma.findByTitle(title);
       res.json({
         success: true,
         data: movies,
@@ -97,7 +97,7 @@ class MovieController {
         });
       }
 
-      const movie = await Movie.create(value);
+      const movie = await MoviePrisma.create(value);
       res.status(201).json({
         success: true,
         data: movie,
@@ -135,7 +135,7 @@ class MovieController {
         });
       }
 
-      const movie = await Movie.update(id, value);
+      const movie = await MoviePrisma.update(id, value);
       
       if (!movie) {
         return res.status(404).json({
@@ -166,9 +166,9 @@ class MovieController {
 
       let movie;
       if (hard_delete === 'true') {
-        movie = await Movie.hardDelete(id);
+        movie = await MoviePrisma.hardDelete(id);
       } else {
-        movie = await Movie.delete(id); // Soft delete
+        movie = await MoviePrisma.delete(id); // Soft delete
       }
       
       if (!movie) {
@@ -204,7 +204,7 @@ class MovieController {
   async activateMovie(req, res) {
     try {
       const { id } = req.params;
-      const movie = await Movie.activate(id);
+      const movie = await MoviePrisma.activate(id);
       
       if (!movie) {
         return res.status(404).json({
@@ -231,7 +231,7 @@ class MovieController {
   async getMovieStats(req, res) {
     try {
       const { id } = req.params;
-      const stats = await Movie.getMovieStats(id);
+      const stats = await MoviePrisma.getMovieStats(id);
       
       if (!stats) {
         return res.status(404).json({

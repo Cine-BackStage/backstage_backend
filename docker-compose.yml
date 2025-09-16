@@ -41,12 +41,12 @@ services:
         condition: service_healthy
 
   api:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     container_name: cinema_api
     environment:
-      DATABASE_URL: postgresql://cinema_user:cinema_pass@postgres:5432/cinema_management
+      DATABASE_URL: postgresql://cinema_user:cinema_pass@postgres:5432/cinema_management?schema=public
       NODE_ENV: development
       PORT: 3000
     ports:

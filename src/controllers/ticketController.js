@@ -1,10 +1,10 @@
-const Ticket = require('../models/Ticket');
+const TicketPrisma = require('../models/TicketPrisma');
 const { validateTicket, validateBulkTicket } = require('../utils/validation');
 
 class TicketController {
   async getAllTickets(req, res) {
     try {
-      const tickets = await Ticket.findAll();
+      const tickets = await TicketPrisma.findAll();
       res.json({
         success: true,
         data: tickets,
@@ -23,7 +23,7 @@ class TicketController {
   async getTicketById(req, res) {
     try {
       const { id } = req.params;
-      const ticket = await Ticket.findById(id);
+      const ticket = await TicketPrisma.findById(id);
       
       if (!ticket) {
         return res.status(404).json({
@@ -49,7 +49,7 @@ class TicketController {
   async getTicketsBySession(req, res) {
     try {
       const { sessionId } = req.params;
-      const tickets = await Ticket.findBySession(sessionId);
+      const tickets = await TicketPrisma.findBySession(sessionId);
       
       res.json({
         success: true,
@@ -77,7 +77,7 @@ class TicketController {
         });
       }
 
-      const ticket = await Ticket.create(value);
+      const ticket = await TicketPrisma.create(value);
       res.status(201).json({
         success: true,
         data: ticket,
@@ -123,7 +123,7 @@ class TicketController {
       }
 
       const { session_id, seat_ids, price } = value;
-      const tickets = await Ticket.bulkCreate(session_id, seat_ids, price);
+      const tickets = await TicketPrisma.bulkCreate(session_id, seat_ids, price);
       
       res.status(201).json({
         success: true,
@@ -162,7 +162,7 @@ class TicketController {
   async deleteTicket(req, res) {
     try {
       const { id } = req.params;
-      const ticket = await Ticket.delete(id);
+      const ticket = await TicketPrisma.delete(id);
       
       if (!ticket) {
         return res.status(404).json({
