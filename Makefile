@@ -127,7 +127,7 @@ db-reset:
 
 seed:
 	@echo "🌱 Seeding database with sample data..."
-	@docker-compose exec postgres psql -U cinema_user -d cinema_management -f /scripts/common_queries.sql
+	@docker-compose exec postgres psql -U cinema_user -d cinema_management -f /docker-entrypoint-initdb.d/03_seed_data.sql
 	@echo "✅ Database seeded successfully"
 
 backup:
