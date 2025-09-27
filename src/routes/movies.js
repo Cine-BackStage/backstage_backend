@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const movieController = require('../controllers/movieController');
+const { authenticateEmployee } = require('../middleware/auth-multitenant');
 
 /**
  * @swagger
@@ -145,7 +146,7 @@ const movieController = require('../controllers/movieController');
  *                   type: integer
  *                   example: 5
  */
-router.get('/', movieController.getAllMovies);
+router.get('/', authenticateEmployee, movieController.getAllMovies);
 
 /**
  * @swagger
@@ -180,7 +181,7 @@ router.get('/', movieController.getAllMovies);
  *       400:
  *         description: Title parameter is required
  */
-router.get('/search', movieController.searchMovies);
+router.get('/search', authenticateEmployee, movieController.searchMovies);
 
 /**
  * @swagger
@@ -211,7 +212,7 @@ router.get('/search', movieController.searchMovies);
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get('/:id', movieController.getMovieById);
+router.get('/:id', authenticateEmployee, movieController.getMovieById);
 
 /**
  * @swagger
@@ -242,7 +243,7 @@ router.get('/:id', movieController.getMovieById);
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get('/:id/stats', movieController.getMovieStats);
+router.get('/:id/stats', authenticateEmployee, movieController.getMovieStats);
 
 /**
  * @swagger
@@ -308,7 +309,7 @@ router.get('/:id/stats', movieController.getMovieStats);
  *       409:
  *         description: Movie with this title already exists
  */
-router.post('/', movieController.createMovie);
+router.post('/', authenticateEmployee, movieController.createMovie);
 
 /**
  * @swagger
@@ -370,7 +371,7 @@ router.post('/', movieController.createMovie);
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.put('/:id', movieController.updateMovie);
+router.put('/:id', authenticateEmployee, movieController.updateMovie);
 
 /**
  * @swagger
@@ -411,7 +412,7 @@ router.put('/:id', movieController.updateMovie);
  *       409:
  *         description: Cannot delete movie with existing sessions
  */
-router.delete('/:id', movieController.deleteMovie);
+router.delete('/:id', authenticateEmployee, movieController.deleteMovie);
 
 /**
  * @swagger
@@ -445,6 +446,6 @@ router.delete('/:id', movieController.deleteMovie);
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.patch('/:id/activate', movieController.activateMovie);
+router.patch('/:id/activate', authenticateEmployee, movieController.activateMovie);
 
 module.exports = router;

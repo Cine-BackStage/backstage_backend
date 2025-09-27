@@ -5,12 +5,16 @@ const sessionRoutes = require('./sessions');
 const ticketRoutes = require('./tickets');
 const saleRoutes = require('./sales');
 const movieRoutes = require('./movies');
+const employeeRoutes = require('./employees');
+const systemAdminRoutes = require('./systemAdmin');
 
 // Mount route modules
 router.use('/sessions', sessionRoutes);
 router.use('/tickets', ticketRoutes);
 router.use('/sales', saleRoutes);
 router.use('/movies', movieRoutes);
+router.use('/employees', employeeRoutes);
+router.use('/system-admin', systemAdminRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
@@ -31,8 +35,10 @@ router.get('/', (req, res) => {
     endpoints: {
       movies: '/api/movies',
       sessions: '/api/sessions',
-      tickets: '/api/tickets', 
+      tickets: '/api/tickets',
       sales: '/api/sales',
+      employees: '/api/employees',
+      'system-admin': '/api/system-admin',
       health: '/api/health'
     },
     documentation: {
@@ -71,6 +77,31 @@ router.get('/', (req, res) => {
         'POST /sales/:saleId/discount': 'Apply discount to sale',
         'POST /sales/:saleId/finalize': 'Finalize sale with payment',
         'POST /sales/:saleId/cancel': 'Cancel sale'
+      },
+      employees: {
+        'POST /employees/login': 'Employee authentication',
+        'GET /employees': 'Get all employees',
+        'POST /employees': 'Create new employee account',
+        'GET /employees/me': 'Get current employee profile',
+        'GET /employees/:cpf': 'Get employee by CPF',
+        'PUT /employees/:cpf': 'Update employee',
+        'POST /employees/clock-in': 'Clock in',
+        'POST /employees/clock-out': 'Clock out',
+        'GET /employees/time-entries': 'Get time entries',
+        'GET /employees/activity-logs': 'Get activity logs',
+        'GET /employees/:cpf/metrics': 'Get employee metrics'
+      },
+      'system-admin': {
+        'POST /system-admin/login': 'System admin authentication',
+        'GET /system-admin/companies': 'Get all companies (cross-tenant)',
+        'GET /system-admin/companies/:id': 'Get company details',
+        'POST /system-admin/companies': 'Create new company',
+        'PUT /system-admin/companies/:id': 'Update company',
+        'DELETE /system-admin/companies/:id': 'Deactivate company',
+        'GET /system-admin/stats': 'Get platform statistics',
+        'GET /system-admin/companies/:id/employees': 'Get company employees',
+        'GET /system-admin/companies/:id/customers': 'Get company customers',
+        'GET /system-admin/audit-logs': 'Get cross-tenant audit logs'
       }
     }
   });
