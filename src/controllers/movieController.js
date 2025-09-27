@@ -1,27 +1,65 @@
-const MoviePrisma = require('../models/MoviePrisma');
+const { db } = require('../database/prisma');
 const { validateMovie } = require('../utils/validation');
 
 class MovieController {
   async getAllMovies(req, res) {
     try {
-      const filters = {
-        is_active: req.query.is_active !== undefined ? req.query.is_active === 'true' : undefined,
-        genre: req.query.genre,
-        title: req.query.title
+      const companyId = req.employee.companyId; // Get from authenticated employee
+
+      const where = {
+        companyId: companyId // Add tenant scoping
       };
 
-      // Remove undefined filters
-      Object.keys(filters).forEach(key => {
-        if (filters[key] === undefined) {
-          delete filters[key];
+      // Apply filters
+      if (req.query.is_active !== undefined) {
+        where.isActive = req.query.is_active === 'true';
+      }
+
+      if (req.query.genre) {
+        where.genre = {
+          contains: req.query.genre,
+          mode: 'insensitive'
+        };
+      }
+
+      if (req.query.title) {
+        where.title = {
+          contains: req.query.title,
+          mode: 'insensitive'
+        };
+      }
+
+      const movies = await db.movie.findMany({
+        where,
+        include: {
+          sessions: {
+            where: {
+              companyId: companyId, // Ensure sessions are also tenant-scoped
+              startTime: {
+                gte: new Date()
+              }
+            },
+            orderBy: {
+              startTime: 'asc'
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
         }
       });
 
-      const movies = await MoviePrisma.findAll(filters);
+      // Add computed fields for backward compatibility
+      const moviesWithStats = movies.map(movie => ({
+        ...movie,
+        total_sessions: movie.sessions.length,
+        upcoming_sessions: movie.sessions.filter(session => new Date(session.startTime) > new Date()).length
+      }));
+
       res.json({
         success: true,
-        data: movies,
-        count: movies.length
+        data: moviesWithStats,
+        count: moviesWithStats.length
       });
     } catch (error) {
       console.error('Error fetching movies:', error);
@@ -36,8 +74,25 @@ class MovieController {
   async getMovieById(req, res) {
     try {
       const { id } = req.params;
-      const movie = await MoviePrisma.findById(id);
-      
+      const companyId = req.employee.companyId;
+
+      const movie = await db.movie.findFirst({
+        where: {
+          id: parseInt(id),
+          companyId: companyId
+        },
+        include: {
+          sessions: {
+            where: {
+              companyId: companyId
+            },
+            orderBy: {
+              startTime: 'asc'
+            }
+          }
+        }
+      });
+
       if (!movie) {
         return res.status(404).json({
           success: false,
@@ -45,9 +100,16 @@ class MovieController {
         });
       }
 
+      // Add computed fields
+      const movieWithStats = {
+        ...movie,
+        total_sessions: movie.sessions.length,
+        upcoming_sessions: movie.sessions.filter(session => new Date(session.startTime) > new Date()).length
+      };
+
       res.json({
         success: true,
-        data: movie
+        data: movieWithStats
       });
     } catch (error) {
       console.error('Error fetching movie:', error);
@@ -62,7 +124,8 @@ class MovieController {
   async searchMovies(req, res) {
     try {
       const { title } = req.query;
-      
+      const companyId = req.employee.companyId;
+
       if (!title) {
         return res.status(400).json({
           success: false,
@@ -70,11 +133,40 @@ class MovieController {
         });
       }
 
-      const movies = await MoviePrisma.findByTitle(title);
+      const movies = await db.movie.findMany({
+        where: {
+          companyId: companyId,
+          title: {
+            contains: title,
+            mode: 'insensitive'
+          }
+        },
+        include: {
+          sessions: {
+            where: {
+              companyId: companyId
+            },
+            orderBy: {
+              startTime: 'asc'
+            }
+          }
+        },
+        orderBy: {
+          title: 'asc'
+        }
+      });
+
+      // Add computed fields
+      const moviesWithStats = movies.map(movie => ({
+        ...movie,
+        total_sessions: movie.sessions.length,
+        upcoming_sessions: movie.sessions.filter(session => new Date(session.startTime) > new Date()).length
+      }));
+
       res.json({
         success: true,
-        data: movies,
-        count: movies.length
+        data: moviesWithStats,
+        count: moviesWithStats.length
       });
     } catch (error) {
       console.error('Error searching movies:', error);
@@ -89,6 +181,8 @@ class MovieController {
   async createMovie(req, res) {
     try {
       const { error, value } = validateMovie(req.body);
+      const companyId = req.employee.companyId;
+
       if (error) {
         return res.status(400).json({
           success: false,
@@ -97,7 +191,28 @@ class MovieController {
         });
       }
 
-      const movie = await MoviePrisma.create(value);
+      // Check if movie with same title already exists for this company
+      const existingMovie = await db.movie.findFirst({
+        where: {
+          companyId: companyId,
+          title: value.title
+        }
+      });
+
+      if (existingMovie) {
+        return res.status(409).json({
+          success: false,
+          message: 'A movie with this title already exists in your company'
+        });
+      }
+
+      const movie = await db.movie.create({
+        data: {
+          ...value,
+          companyId: companyId
+        }
+      });
+
       res.status(201).json({
         success: true,
         data: movie,
@@ -105,14 +220,6 @@ class MovieController {
       });
     } catch (error) {
       console.error('Error creating movie:', error);
-      
-      // Handle duplicate title error
-      if (error.code === '23505' && error.constraint === 'movie_title_unique') {
-        return res.status(409).json({
-          success: false,
-          message: 'A movie with this title already exists'
-        });
-      }
 
       res.status(500).json({
         success: false,
