@@ -1,10 +1,26 @@
-const TicketPrisma = require('../models/TicketPrisma');
+const { db } = require('../database/prisma');
 const { validateTicket, validateBulkTicket } = require('../utils/validation');
 
 class TicketController {
   async getAllTickets(req, res) {
     try {
-      const tickets = await TicketPrisma.findAll();
+      const companyId = req.employee.companyId;
+
+      const tickets = await db.ticket.findMany({
+        where: { companyId },
+        include: {
+          session: {
+            include: {
+              movie: true,
+              room: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
       res.json({
         success: true,
         data: tickets,

@@ -1,10 +1,29 @@
-const SessionPrisma = require('../models/SessionPrisma');
+const { db } = require('../database/prisma');
 const { validateSession } = require('../utils/validation');
 
 class SessionController {
   async getAllSessions(req, res) {
     try {
-      const sessions = await SessionPrisma.findAllWithPricing();
+      const companyId = req.employee.companyId;
+
+      const sessions = await db.session.findMany({
+        where: { companyId },
+        include: {
+          movie: true,
+          room: {
+            include: {
+              roomType: true
+            }
+          },
+          tickets: {
+            where: { companyId }
+          }
+        },
+        orderBy: {
+          startTime: 'asc'
+        }
+      });
+
       res.json({
         success: true,
         data: sessions,

@@ -1,13 +1,29 @@
-const SalePrisma = require('../models/SalePrisma');
+const { db } = require('../database/prisma');
 const { validateSale, validateSaleItem, validatePayment } = require('../utils/validation');
 
 class SaleController {
   async getAllSales(req, res) {
     try {
+      const companyId = req.employee.companyId;
       const limit = parseInt(req.query.limit) || 50;
       const offset = parseInt(req.query.offset) || 0;
-      
-      const sales = await SalePrisma.findAll(limit, offset);
+
+      const sales = await db.sale.findMany({
+        where: { companyId },
+        include: {
+          saleItems: {
+            where: { companyId }
+          },
+          payments: {
+            where: { companyId }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: limit,
+        skip: offset
+      });
       res.json({
         success: true,
         data: sales,
