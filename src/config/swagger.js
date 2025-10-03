@@ -107,11 +107,17 @@ curl -H "Authorization: Bearer [SYSADMIN_TOKEN]" http://localhost:3000/api/syste
     ],
     components: {
       securitySchemes: {
-        BearerAuth: {
+        bearerAuth: {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'Enter JWT Bearer token obtained from /api/employees/login'
+          description: 'Tenant Employee JWT token - Use for all tenant-scoped endpoints (movies, sessions, rooms, tickets, sales). Obtain from /api/employees/login'
+        },
+        SystemAdminAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'System Administrator JWT token - Use ONLY for /api/system-admin/* endpoints (cross-tenant access). Obtain from /api/system-admin/login'
         }
       },
       schemas: {
@@ -250,7 +256,7 @@ curl -H "Authorization: Bearer [SYSADMIN_TOKEN]" http://localhost:3000/api/syste
     },
     security: [
       {
-        BearerAuth: []
+        bearerAuth: []
       }
     ]
   },

@@ -6,12 +6,6 @@ const { authenticateSystemAdmin } = require('../middleware/auth-multitenant');
 /**
  * @swagger
  * components:
- *   securitySchemes:
- *     SystemAdminAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
- *       description: System Administrator JWT token for cross-tenant access
  *   schemas:
  *     SystemAdminLogin:
  *       type: object

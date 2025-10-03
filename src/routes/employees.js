@@ -89,12 +89,6 @@ const {
  *           type: string
  *         metadata:
  *           type: object
- *
- *   securitySchemes:
- *     BearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
  */
 
 /**
@@ -152,7 +146,7 @@ router.post('/login', auditLogger('EMPLOYEE_LOGIN', 'EMPLOYEE'), EmployeeControl
  *     description: Create a new employee account with role-based access
  *     tags: [Employee Management]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -222,7 +216,7 @@ router.post('/',
  *     description: Retrieve all employees with optional filtering and pagination
  *     tags: [Employee Management]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: isActive
@@ -285,7 +279,7 @@ router.get('/',
  *     description: Get the authenticated employee's profile information
  *     tags: [Employee Management]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Current employee profile
@@ -313,7 +307,7 @@ router.get('/me',
  *     description: Record employee clock-in time
  *     tags: [Time Tracking]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       content:
  *         application/json:
@@ -353,7 +347,7 @@ router.post('/clock-in',
  *     description: Record employee clock-out time
  *     tags: [Time Tracking]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       content:
  *         application/json:
@@ -393,7 +387,7 @@ router.post('/clock-out',
  *     description: View employee time tracking records
  *     tags: [Time Tracking]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: employeeCpf
@@ -460,7 +454,7 @@ router.get('/time-entries',
  *     description: View employee activity and performance metrics
  *     tags: [Employee Activity]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: actorCpf
@@ -532,7 +526,7 @@ router.get('/activity-logs',
  *     description: Get detailed employee information by CPF
  *     tags: [Employee Management]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: cpf
@@ -571,7 +565,7 @@ router.get('/:cpf',
  *     description: Update employee information and permissions (US-025)
  *     tags: [Employee Management]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: cpf
@@ -632,7 +626,7 @@ router.put('/:cpf',
  *     description: Get detailed performance metrics for a specific employee
  *     tags: [Employee Activity]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: cpf
