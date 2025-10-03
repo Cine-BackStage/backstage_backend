@@ -1,6 +1,7 @@
 const Joi = require('joi');
 const EmployeeMultiTenant = require('../models/EmployeeMultiTenant');
 const { AuthService } = require('../middleware/auth-multitenant');
+const { db } = require('../database/prisma');
 
 class EmployeeController {
   // US-022: Create employee account
@@ -77,6 +78,7 @@ class EmployeeController {
   static async login(req, res) {
     try {
       const schema = Joi.object({
+        companyId: Joi.string().uuid().optional(),
         employeeId: Joi.string().required(),
         password: Joi.string().required()
       });
@@ -90,7 +92,27 @@ class EmployeeController {
         });
       }
 
-      const employee = await EmployeeMultiTenant.authenticateEmployee(value.employeeId, value.password);
+      // If companyId not provided, try to find employee across all companies
+      let employee;
+      if (value.companyId) {
+        employee = await EmployeeMultiTenant.authenticateLogin(value.companyId, value.employeeId, value.password);
+      } else {
+        // Search across all active companies
+        const allCompanies = await db.company.findMany({ where: { isActive: true }, select: { id: true } });
+        for (const company of allCompanies) {
+          try {
+            employee = await EmployeeMultiTenant.authenticateLogin(company.id, value.employeeId, value.password);
+            if (employee) break;
+          } catch (e) {
+            // Continue searching
+            continue;
+          }
+        }
+        if (!employee) {
+          throw new Error('Invalid credentials');
+        }
+      }
+
       const token = AuthService.generateToken(employee);
 
       res.json({
@@ -137,7 +159,19 @@ class EmployeeController {
         });
       }
 
-      const result = await EmployeeMultiTenant.getAllEmployees(value);
+      const companyId = req.employee.companyId;
+      const result = await EmployeeMultiTenant.listEmployees(
+        companyId,
+        {
+          role: value.role,
+          search: value.search,
+          isActive: value.isActive
+        },
+        {
+          page: value.page || 1,
+          limit: value.limit || 50
+        }
+      );
 
       res.json({
         success: true,
@@ -169,7 +203,8 @@ class EmployeeController {
         });
       }
 
-      const employee = await EmployeeMultiTenant.getEmployeeByCpf(value.cpf);
+      const companyId = req.employee.companyId;
+      const employee = await EmployeeMultiTenant.findByCpf(companyId, value.cpf);
 
       res.json({
         success: true,
@@ -226,7 +261,8 @@ class EmployeeController {
         });
       }
 
-      const employee = await EmployeeMultiTenant.updateEmployee(req.params.cpf, value);
+      const companyId = req.employee.companyId;
+      const employee = await EmployeeMultiTenant.updateEmployee(companyId, req.params.cpf, value);
 
       res.json({
         success: true,
@@ -284,6 +320,7 @@ class EmployeeController {
       };
 
       const timeEntry = await EmployeeMultiTenant.recordTimeEntry(
+        req.employee.companyId,
         req.employee.cpf,
         'CLOCK_IN',
         metadata
@@ -332,6 +369,7 @@ class EmployeeController {
       };
 
       const timeEntry = await EmployeeMultiTenant.recordTimeEntry(
+        req.employee.companyId,
         req.employee.cpf,
         'CLOCK_OUT',
         metadata
@@ -378,12 +416,23 @@ class EmployeeController {
         });
       }
 
-      const result = await EmployeeMultiTenant.getTimeEntries(value);
+      const companyId = req.employee.companyId;
+      const result = await EmployeeMultiTenant.getTimeEntries(
+        companyId,
+        value.employeeCpf || null,
+        {
+          startDate: value.startDate,
+          endDate: value.endDate,
+          entryType: value.entryType,
+          page: value.page || 1,
+          limit: value.limit || 100
+        }
+      );
 
       res.json({
         success: true,
         message: 'Time entries retrieved successfully',
-        data: result.entries,
+        data: result.timeEntries,
         pagination: result.pagination
       });
     } catch (error) {
@@ -417,13 +466,51 @@ class EmployeeController {
         });
       }
 
-      const result = await EmployeeMultiTenant.getActivityLogs(value);
+      const companyId = req.employee.companyId;
+      const page = value.page || 1;
+      const limit = Math.min(value.limit || 50, 100);
+      const skip = (page - 1) * limit;
+
+      const where = {
+        companyId,
+        ...(value.actorCpf && { actorCpf: value.actorCpf }),
+        ...(value.action && { action: value.action }),
+        ...(value.targetType && { targetType: value.targetType }),
+        ...((value.startDate || value.endDate) && {
+          timestamp: {
+            ...(value.startDate && { gte: new Date(value.startDate) }),
+            ...(value.endDate && { lte: new Date(value.endDate) })
+          }
+        })
+      };
+
+      const [logs, totalCount] = await Promise.all([
+        db.auditLog.findMany({
+          where,
+          include: {
+            employee: {
+              include: {
+                person: true
+              }
+            }
+          },
+          orderBy: { timestamp: 'desc' },
+          skip,
+          take: limit
+        }),
+        db.auditLog.count({ where })
+      ]);
 
       res.json({
         success: true,
         message: 'Activity logs retrieved successfully',
-        data: result.logs,
-        pagination: result.pagination
+        data: logs,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit)
+        }
       });
     } catch (error) {
       console.error('Get activity logs error:', error);
@@ -463,10 +550,14 @@ class EmployeeController {
         });
       }
 
-      const metrics = await EmployeeMultiTenant.getEmployeeMetrics(
+      const companyId = req.employee.companyId;
+      const metrics = await EmployeeMultiTenant.getPerformanceMetrics(
+        companyId,
         req.params.cpf,
-        value.startDate,
-        value.endDate
+        {
+          startDate: value.startDate,
+          endDate: value.endDate
+        }
       );
 
       res.json({
@@ -486,7 +577,8 @@ class EmployeeController {
   // Get current employee profile
   static async getCurrentEmployee(req, res) {
     try {
-      const employee = await EmployeeMultiTenant.getEmployeeByCpf(req.employee.cpf);
+      const companyId = req.employee.companyId;
+      const employee = await EmployeeMultiTenant.findByCpf(companyId, req.employee.cpf);
 
       res.json({
         success: true,
