@@ -7,6 +7,7 @@ const saleRoutes = require('./sales');
 const movieRoutes = require('./movies');
 const employeeRoutes = require('./employees');
 const systemAdminRoutes = require('./systemAdmin');
+const roomRoutes = require('./rooms');
 
 // Mount route modules
 router.use('/sessions', sessionRoutes);
@@ -15,6 +16,7 @@ router.use('/sales', saleRoutes);
 router.use('/movies', movieRoutes);
 router.use('/employees', employeeRoutes);
 router.use('/system-admin', systemAdminRoutes);
+router.use('/rooms', roomRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
@@ -39,6 +41,7 @@ router.get('/', (req, res) => {
       sales: '/api/sales',
       employees: '/api/employees',
       'system-admin': '/api/system-admin',
+      rooms: '/api/rooms',
       health: '/api/health'
     },
     documentation: {
@@ -102,6 +105,22 @@ router.get('/', (req, res) => {
         'GET /system-admin/companies/:id/employees': 'Get company employees',
         'GET /system-admin/companies/:id/customers': 'Get company customers',
         'GET /system-admin/audit-logs': 'Get cross-tenant audit logs'
+      },
+      rooms: {
+        'GET /rooms': 'Get all rooms',
+        'GET /rooms/:id': 'Get room by ID',
+        'POST /rooms': 'Create new room',
+        'PUT /rooms/:id': 'Update room',
+        'DELETE /rooms/:id': 'Delete/deactivate room',
+        'PATCH /rooms/:id/activate': 'Activate room',
+        'GET /rooms/seat-maps/all': 'Get all seat maps',
+        'GET /rooms/seat-maps/:id': 'Get seat map by ID',
+        'POST /rooms/seat-maps': 'Create seat map',
+        'PUT /rooms/seat-maps/:id': 'Update seat map',
+        'DELETE /rooms/seat-maps/:id': 'Delete seat map',
+        'POST /rooms/seat-maps/:seatMapId/seats': 'Create seats for seat map',
+        'GET /rooms/pricing/room-types': 'Get room type prices',
+        'POST /rooms/pricing/room-types': 'Set room type price'
       }
     }
   });
