@@ -8,6 +8,7 @@ const movieRoutes = require('./movies');
 const employeeRoutes = require('./employees');
 const systemAdminRoutes = require('./systemAdmin');
 const roomRoutes = require('./rooms');
+const inventoryRoutes = require('./inventory');
 
 // Mount route modules
 router.use('/sessions', sessionRoutes);
@@ -17,6 +18,7 @@ router.use('/movies', movieRoutes);
 router.use('/employees', employeeRoutes);
 router.use('/system-admin', systemAdminRoutes);
 router.use('/rooms', roomRoutes);
+router.use('/inventory', inventoryRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
@@ -42,6 +44,7 @@ router.get('/', (req, res) => {
       employees: '/api/employees',
       'system-admin': '/api/system-admin',
       rooms: '/api/rooms',
+      inventory: '/api/inventory',
       health: '/api/health'
     },
     documentation: {
@@ -121,6 +124,19 @@ router.get('/', (req, res) => {
         'POST /rooms/seat-maps/:seatMapId/seats': 'Create seats for seat map',
         'GET /rooms/pricing/room-types': 'Get room type prices',
         'POST /rooms/pricing/room-types': 'Set room type price'
+      },
+      inventory: {
+        'GET /inventory': 'Get all inventory items with filtering',
+        'GET /inventory/alerts/low-stock': 'Get low-stock alerts',
+        'GET /inventory/expiring': 'Get expiring food items',
+        'GET /inventory/:sku': 'Get item by SKU',
+        'GET /inventory/adjustments/history': 'Get adjustment history',
+        'GET /inventory/audit/logs': 'Get audit logs',
+        'POST /inventory': 'Create new inventory item',
+        'PATCH /inventory/:sku': 'Update inventory item',
+        'PATCH /inventory/:sku/deactivate': 'Deactivate item',
+        'PATCH /inventory/:sku/activate': 'Activate item',
+        'POST /inventory/:sku/adjust': 'Record stock adjustment'
       }
     }
   });
