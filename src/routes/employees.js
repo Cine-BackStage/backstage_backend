@@ -4,7 +4,7 @@ const EmployeeController = require('../controllers/employeeController');
 const {
   authenticateEmployee,
   authorizeRoles,
-  authorizePermissions,
+  authorizePermissions: _authorizePermissions,
   auditLogger
 } = require('../middleware/auth-multitenant');
 

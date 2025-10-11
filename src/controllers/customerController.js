@@ -283,7 +283,7 @@ class CustomerController {
             favoriteMovies,
             loyaltyTier: customer.loyaltyPoints >= 1000 ? 'GOLD'
               : customer.loyaltyPoints >= 500 ? 'SILVER'
-              : 'BRONZE'
+                : 'BRONZE'
           }
         }
       });
@@ -712,10 +712,10 @@ class CustomerController {
       });
 
       const segments = {
-        vip: 0,      // 10+ purchases
-        regular: 0,  // 5-9 purchases
+        vip: 0, // 10+ purchases
+        regular: 0, // 5-9 purchases
         occasional: 0, // 2-4 purchases
-        onetime: 0   // 1 purchase
+        onetime: 0 // 1 purchase
       };
 
       allCustomersWithSales.forEach(customer => {

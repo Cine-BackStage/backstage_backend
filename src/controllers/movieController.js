@@ -7,7 +7,7 @@ class MovieController {
       const companyId = req.employee.companyId; // Get from authenticated employee
 
       const where = {
-        companyId: companyId // Add tenant scoping
+        companyId // Add tenant scoping
       };
 
       // Apply filters
@@ -34,7 +34,7 @@ class MovieController {
         include: {
           sessions: {
             where: {
-              companyId: companyId, // Ensure sessions are also tenant-scoped
+              companyId, // Ensure sessions are also tenant-scoped
               startTime: {
                 gte: new Date()
               }
@@ -79,12 +79,12 @@ class MovieController {
       const movie = await db.movie.findFirst({
         where: {
           id: parseInt(id),
-          companyId: companyId
+          companyId
         },
         include: {
           sessions: {
             where: {
-              companyId: companyId
+              companyId
             },
             orderBy: {
               startTime: 'asc'
@@ -135,7 +135,7 @@ class MovieController {
 
       const movies = await db.movie.findMany({
         where: {
-          companyId: companyId,
+          companyId,
           title: {
             contains: title,
             mode: 'insensitive'
@@ -144,7 +144,7 @@ class MovieController {
         include: {
           sessions: {
             where: {
-              companyId: companyId
+              companyId
             },
             orderBy: {
               startTime: 'asc'
@@ -194,7 +194,7 @@ class MovieController {
       // Check if movie with same title already exists for this company
       const existingMovie = await db.movie.findFirst({
         where: {
-          companyId: companyId,
+          companyId,
           title: value.title
         }
       });
@@ -209,7 +209,7 @@ class MovieController {
       const movie = await db.movie.create({
         data: {
           ...value,
-          companyId: companyId
+          companyId
         }
       });
 
@@ -232,8 +232,9 @@ class MovieController {
   async updateMovie(req, res) {
     try {
       const { id } = req.params;
+      const companyId = req.employee.companyId;
       const { error, value } = validateMovie(req.body, true); // partial validation
-      
+
       if (error) {
         return res.status(400).json({
           success: false,
@@ -242,8 +243,16 @@ class MovieController {
         });
       }
 
-      const movie = await MoviePrisma.update(id, value);
-      
+      const movie = await db.movie.update({
+        where: {
+          companyId_id: {
+            companyId,
+            id: parseInt(id)
+          }
+        },
+        data: value
+      });
+
       if (!movie) {
         return res.status(404).json({
           success: false,
@@ -269,15 +278,31 @@ class MovieController {
   async deleteMovie(req, res) {
     try {
       const { id } = req.params;
+      const companyId = req.employee.companyId;
       const { hard_delete } = req.query;
 
       let movie;
       if (hard_delete === 'true') {
-        movie = await MoviePrisma.hardDelete(id);
+        movie = await db.movie.delete({
+          where: {
+            companyId_id: {
+              companyId,
+              id: parseInt(id)
+            }
+          }
+        });
       } else {
-        movie = await MoviePrisma.delete(id); // Soft delete
+        movie = await db.movie.update({
+          where: {
+            companyId_id: {
+              companyId,
+              id: parseInt(id)
+            }
+          },
+          data: { isActive: false }
+        });
       }
-      
+
       if (!movie) {
         return res.status(404).json({
           success: false,
@@ -292,7 +317,7 @@ class MovieController {
       });
     } catch (error) {
       console.error('Error deleting movie:', error);
-      
+
       if (error.message.includes('existing sessions')) {
         return res.status(409).json({
           success: false,
@@ -311,8 +336,18 @@ class MovieController {
   async activateMovie(req, res) {
     try {
       const { id } = req.params;
-      const movie = await MoviePrisma.activate(id);
-      
+      const companyId = req.employee.companyId;
+
+      const movie = await db.movie.update({
+        where: {
+          companyId_id: {
+            companyId,
+            id: parseInt(id)
+          }
+        },
+        data: { isActive: true }
+      });
+
       if (!movie) {
         return res.status(404).json({
           success: false,
@@ -338,14 +373,42 @@ class MovieController {
   async getMovieStats(req, res) {
     try {
       const { id } = req.params;
-      const stats = await MoviePrisma.getMovieStats(id);
-      
-      if (!stats) {
+      const companyId = req.employee.companyId;
+
+      const movie = await db.movie.findUnique({
+        where: {
+          companyId_id: {
+            companyId,
+            id: parseInt(id)
+          }
+        },
+        include: {
+          sessions: {
+            where: { companyId },
+            include: {
+              tickets: true
+            }
+          }
+        }
+      });
+
+      if (!movie) {
         return res.status(404).json({
           success: false,
           message: 'Movie not found'
         });
       }
+
+      const stats = {
+        movieId: movie.id,
+        title: movie.title,
+        totalSessions: movie.sessions.length,
+        totalTicketsSold: movie.sessions.reduce((sum, session) => sum + session.tickets.length, 0),
+        totalRevenue: movie.sessions.reduce((sum, session) =>
+          sum + session.tickets.reduce((ticketSum, ticket) => ticketSum + parseFloat(ticket.price), 0), 0
+        ),
+        upcomingSessions: movie.sessions.filter(s => new Date(s.startTime) > new Date()).length
+      };
 
       res.json({
         success: true,

@@ -86,7 +86,7 @@ class InventoryController {
         isLowStock: item.qtyOnHand <= item.reorderLevel,
         stockStatus: item.qtyOnHand === 0 ? 'OUT_OF_STOCK'
           : item.qtyOnHand <= item.reorderLevel ? 'LOW_STOCK'
-          : 'IN_STOCK',
+            : 'IN_STOCK',
         itemType: item.food ? 'FOOD' : item.collectable ? 'COLLECTABLE' : 'GENERAL'
       }));
 
@@ -147,7 +147,7 @@ class InventoryController {
           daysUntilStockout: item.qtyOnHand > 0 ? Math.ceil(item.qtyOnHand / 10) : 0, // Rough estimate
           priority: item.qtyOnHand === 0 ? 'CRITICAL'
             : item.qtyOnHand <= (item.reorderLevel * 0.3) ? 'HIGH'
-            : 'MEDIUM'
+              : 'MEDIUM'
         }))
         .sort((a, b) => a.qtyOnHand - b.qtyOnHand);
 
@@ -237,7 +237,7 @@ class InventoryController {
           isLowStock: item.qtyOnHand <= item.reorderLevel,
           stockStatus: item.qtyOnHand === 0 ? 'OUT_OF_STOCK'
             : item.qtyOnHand <= item.reorderLevel ? 'LOW_STOCK'
-            : 'IN_STOCK',
+              : 'IN_STOCK',
           itemType: item.food ? 'FOOD' : item.collectable ? 'COLLECTABLE' : 'GENERAL'
         }
       });
@@ -420,7 +420,7 @@ class InventoryController {
         ...(value.barcode !== undefined && { barcode: value.barcode })
       };
 
-      const item = await db.inventoryItem.update({
+      const _item = await db.inventoryItem.update({
         where: {
           companyId_sku: {
             companyId,
@@ -959,11 +959,11 @@ class InventoryController {
           daysRemaining,
           priority: daysRemaining <= 3 ? 'CRITICAL'
             : daysRemaining <= 7 ? 'HIGH'
-            : daysRemaining <= 14 ? 'MEDIUM'
-            : 'LOW',
+              : daysRemaining <= 14 ? 'MEDIUM'
+                : 'LOW',
           action: daysRemaining <= 3 ? 'REMOVE_IMMEDIATELY'
             : daysRemaining <= 7 ? 'DISCOUNT_OR_REMOVE'
-            : 'MONITOR'
+              : 'MONITOR'
         };
       });
 

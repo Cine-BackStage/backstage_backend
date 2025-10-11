@@ -1,4 +1,4 @@
-const errorHandler = (err, req, res, next) => {
+const errorHandler = (err, req, res, _next) => {
   console.error('Error occurred:', {
     message: err.message,
     stack: err.stack,
@@ -8,7 +8,7 @@ const errorHandler = (err, req, res, next) => {
   });
 
   // Default error
-  let error = {
+  const error = {
     success: false,
     message: 'Internal Server Error',
     statusCode: 500
@@ -17,35 +17,35 @@ const errorHandler = (err, req, res, next) => {
   // PostgreSQL errors
   if (err.code) {
     switch (err.code) {
-      case '23505': // Unique constraint violation
-        error.statusCode = 409;
-        error.message = 'Resource already exists';
-        error.detail = 'A record with these values already exists';
-        break;
-      case '23503': // Foreign key constraint violation
-        error.statusCode = 400;
-        error.message = 'Invalid reference';
-        error.detail = 'Referenced record does not exist';
-        break;
-      case '23502': // Not null constraint violation
-        error.statusCode = 400;
-        error.message = 'Missing required field';
-        error.detail = 'A required field is missing';
-        break;
-      case '22001': // String data too long
-        error.statusCode = 400;
-        error.message = 'Data too long';
-        error.detail = 'One or more fields exceed maximum length';
-        break;
-      case '08003': // Connection does not exist
-      case '08006': // Connection failure
-        error.statusCode = 503;
-        error.message = 'Database connection error';
-        error.detail = 'Unable to connect to the database';
-        break;
-      default:
-        error.message = 'Database error';
-        error.detail = err.message;
+    case '23505': // Unique constraint violation
+      error.statusCode = 409;
+      error.message = 'Resource already exists';
+      error.detail = 'A record with these values already exists';
+      break;
+    case '23503': // Foreign key constraint violation
+      error.statusCode = 400;
+      error.message = 'Invalid reference';
+      error.detail = 'Referenced record does not exist';
+      break;
+    case '23502': // Not null constraint violation
+      error.statusCode = 400;
+      error.message = 'Missing required field';
+      error.detail = 'A required field is missing';
+      break;
+    case '22001': // String data too long
+      error.statusCode = 400;
+      error.message = 'Data too long';
+      error.detail = 'One or more fields exceed maximum length';
+      break;
+    case '08003': // Connection does not exist
+    case '08006': // Connection failure
+      error.statusCode = 503;
+      error.message = 'Database connection error';
+      error.detail = 'Unable to connect to the database';
+      break;
+    default:
+      error.message = 'Database error';
+      error.detail = err.message;
     }
   }
 
@@ -68,7 +68,7 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Custom business logic errors
-  if (err.message === 'Seat already taken' || 
+  if (err.message === 'Seat already taken' ||
       err.message === 'Discount code already applied' ||
       err.message.includes('already exists')) {
     error.statusCode = 409;
@@ -95,9 +95,9 @@ const errorHandler = (err, req, res, next) => {
     success: false,
     message: error.message,
     ...(error.detail && { detail: error.detail }),
-    ...(process.env.NODE_ENV === 'development' && { 
+    ...(process.env.NODE_ENV === 'development' && {
       stack: err.stack,
-      originalError: err.message 
+      originalError: err.message
     })
   });
 };

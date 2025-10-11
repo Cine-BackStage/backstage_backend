@@ -135,7 +135,7 @@ class SessionController {
 
       if (roomType) {
         where.room = {
-          roomType: roomType
+          roomType
         };
       }
 
@@ -351,7 +351,7 @@ class SessionController {
           capacity: session.room.capacity,
           seatMapId: session.room.seatMap.id,
           seats: seatsWithStatus,
-          seatMap: seatMap,
+          seatMap,
           available: seatsWithStatus.filter(s => s.status === 'AVAILABLE').length,
           sold: seatsWithStatus.filter(s => s.status === 'SOLD').length
         }
@@ -709,7 +709,7 @@ class SessionController {
         data: {
           companyId,
           actor: `${employeeCpf}@${companyId}`,
-          action: `SESSION_STATUS_CHANGED`,
+          action: 'SESSION_STATUS_CHANGED',
           targetType: 'Session',
           targetId: id,
           metadata: {

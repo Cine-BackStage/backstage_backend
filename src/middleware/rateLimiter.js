@@ -10,7 +10,7 @@ const generalLimiter = rateLimit({
     retryAfter: 15 * 60 // 15 minutes in seconds
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  legacyHeaders: false // Disable the `X-RateLimit-*` headers
 });
 
 // Stricter limiter for ticket purchases (to prevent overselling)
@@ -23,7 +23,7 @@ const ticketPurchaseLimiter = rateLimit({
     retryAfter: 5 * 60 // 5 minutes in seconds
   },
   standardHeaders: true,
-  legacyHeaders: false,
+  legacyHeaders: false
 });
 
 // Stricter limiter for sale operations
@@ -36,7 +36,7 @@ const saleLimiter = rateLimit({
     retryAfter: 10 * 60 // 10 minutes in seconds
   },
   standardHeaders: true,
-  legacyHeaders: false,
+  legacyHeaders: false
 });
 
 // Very strict limiter for admin operations
@@ -49,7 +49,7 @@ const adminLimiter = rateLimit({
     retryAfter: 60 * 60 // 1 hour in seconds
   },
   standardHeaders: true,
-  legacyHeaders: false,
+  legacyHeaders: false
 });
 
 module.exports = {

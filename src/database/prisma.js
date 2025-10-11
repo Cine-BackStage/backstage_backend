@@ -4,7 +4,7 @@ class DatabaseService {
   constructor() {
     this.prisma = new PrismaClient({
       log: ['query', 'info', 'warn', 'error'],
-      errorFormat: 'minimal',
+      errorFormat: 'minimal'
     });
 
     // Middleware for logging query performance
@@ -72,5 +72,5 @@ const databaseService = new DatabaseService();
 
 module.exports = {
   db: databaseService.client,
-  databaseService,
+  databaseService
 };

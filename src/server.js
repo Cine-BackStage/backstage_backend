@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 
 // Security middleware - completely disable CSP for development
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: false
 }));
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',

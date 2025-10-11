@@ -73,7 +73,7 @@ class TenantQueryBuilder {
    * @returns {Object} Filtered update data
    */
   updateData(data) {
-    const { companyId, ...updateData } = data;
+    const { companyId: _companyId, ...updateData } = data;
     return updateData;
   }
 

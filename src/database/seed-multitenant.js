@@ -380,7 +380,7 @@ class MultiTenantSeeder {
       for (const itemData of inventory) {
         const { category, isCombo, ...baseData } = itemData;
 
-        const inventoryItem = await prisma.inventoryItem.create({
+        const _inventoryItem = await prisma.inventoryItem.create({
           data: {
             companyId: company.id,
             ...baseData,
@@ -550,7 +550,7 @@ class MultiTenantSeeder {
       console.log('==========================================');
 
       await this.clearExistingData();
-      const systemAdmin = await this.createSystemAdmin();
+      const _systemAdmin = await this.createSystemAdmin();
       const companies = await this.createCompanies();
       await this.createEmployeesAndCustomers(companies);
       await this.createMoviesAndRooms(companies);
@@ -562,7 +562,7 @@ class MultiTenantSeeder {
       console.log('============================================');
       console.log('\n📊 Summary:');
       console.log(`🏢 Companies: ${companies.length}`);
-      console.log(`👑 System Admins: 1`);
+      console.log('👑 System Admins: 1');
 
       for (const company of companies) {
         const stats = await this.getCompanyStats(company.id);

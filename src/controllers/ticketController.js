@@ -250,7 +250,7 @@ class TicketController {
   async createTicket(req, res) {
     try {
       const companyId = req.employee.companyId;
-      const cashierCpf = req.employee.cpf;
+      const _cashierCpf = req.employee.cpf;
 
       const schema = Joi.object({
         sessionId: Joi.string().uuid().required(),

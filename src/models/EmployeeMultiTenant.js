@@ -73,14 +73,14 @@ class EmployeeMultiTenant {
 
     return await db.$transaction(async (tx) => {
       // Create or update person record
-      const person = existingPerson
+      const _person = existingPerson
         ? await tx.person.update({
-            where: { cpf },
-            data: { fullName, email, phone, updatedAt: new Date() }
-          })
+          where: { cpf },
+          data: { fullName, email, phone, updatedAt: new Date() }
+        })
         : await tx.person.create({
-            data: { cpf, fullName, email, phone }
-          });
+          data: { cpf, fullName, email, phone }
+        });
 
       // Create employee record
       const employee = await tx.employee.create({

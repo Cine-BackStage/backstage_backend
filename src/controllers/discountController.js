@@ -145,9 +145,9 @@ class DiscountController {
         remainingUses: discount.maxUses ? discount.maxUses - discount.currentUses : null,
         status: discount.validTo < now ? 'EXPIRED'
           : !discount.isActive ? 'INACTIVE'
-          : discount.maxUses && discount.currentUses >= discount.maxUses ? 'MAXED_OUT'
-          : discount.validFrom > now ? 'SCHEDULED'
-          : 'ACTIVE'
+            : discount.maxUses && discount.currentUses >= discount.maxUses ? 'MAXED_OUT'
+              : discount.validFrom > now ? 'SCHEDULED'
+                : 'ACTIVE'
       }));
 
       res.json({
@@ -219,9 +219,9 @@ class DiscountController {
         remainingUses: discountCode.maxUses ? discountCode.maxUses - discountCode.currentUses : null,
         status: discountCode.validTo < now ? 'EXPIRED'
           : !discountCode.isActive ? 'INACTIVE'
-          : discountCode.maxUses && discountCode.currentUses >= discountCode.maxUses ? 'MAXED_OUT'
-          : discountCode.validFrom > now ? 'SCHEDULED'
-          : 'ACTIVE'
+            : discountCode.maxUses && discountCode.currentUses >= discountCode.maxUses ? 'MAXED_OUT'
+              : discountCode.validFrom > now ? 'SCHEDULED'
+                : 'ACTIVE'
       };
 
       res.json({
