@@ -593,6 +593,150 @@ class EmployeeController {
       });
     }
   }
+
+  // US-026: Consolidated employee reports
+  static async getConsolidatedReport(req, res) {
+    try {
+      const schema = Joi.object({
+        startDate: Joi.date().optional(),
+        endDate: Joi.date().optional(),
+        employeeCpf: Joi.string().length(11).pattern(/^\d+$/).optional()
+      });
+
+      const { error, value } = schema.validate(req.query);
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          details: error.details.map(d => d.message)
+        });
+      }
+
+      const companyId = req.employee.companyId;
+      const { startDate, endDate, employeeCpf } = value;
+
+      // Build date filter
+      const dateFilter = (startDate || endDate) ? {
+        ...(startDate && { gte: new Date(startDate) }),
+        ...(endDate && { lte: new Date(endDate) })
+      } : undefined;
+
+      // Get all employees or specific employee
+      const employeeWhere = {
+        companyId,
+        ...(employeeCpf && { cpf: employeeCpf })
+      };
+
+      const employees = await db.employee.findMany({
+        where: employeeWhere,
+        include: {
+          person: true,
+          timeEntries: {
+            where: dateFilter ? { clockInTime: dateFilter } : {},
+            orderBy: { clockInTime: 'desc' }
+          },
+          actorLogs: {
+            where: dateFilter ? { timestamp: dateFilter } : {},
+            orderBy: { timestamp: 'desc' },
+            take: 100
+          }
+        }
+      });
+
+      // Calculate consolidated metrics for each employee
+      const employeeReports = employees.map(emp => {
+        // Calculate total hours worked
+        const totalHours = emp.timeEntries.reduce((sum, entry) => {
+          if (entry.clockOutTime) {
+            const hours = (new Date(entry.clockOutTime) - new Date(entry.clockInTime)) / (1000 * 60 * 60);
+            return sum + hours;
+          }
+          return sum;
+        }, 0);
+
+        // Count activities by action type
+        const activityBreakdown = emp.actorLogs.reduce((acc, log) => {
+          acc[log.action] = (acc[log.action] || 0) + 1;
+          return acc;
+        }, {});
+
+        // Calculate attendance metrics
+        const totalShifts = emp.timeEntries.length;
+        const completedShifts = emp.timeEntries.filter(e => e.clockOutTime).length;
+        const avgHoursPerShift = totalShifts > 0 ? totalHours / totalShifts : 0;
+
+        return {
+          employee: {
+            cpf: emp.cpf,
+            employeeId: emp.employeeId,
+            fullName: emp.person.fullName,
+            email: emp.person.email,
+            role: emp.role,
+            hireDate: emp.hireDate,
+            isActive: emp.isActive
+          },
+          timeMetrics: {
+            totalHoursWorked: Math.round(totalHours * 100) / 100,
+            totalShifts,
+            completedShifts,
+            incompleteShifts: totalShifts - completedShifts,
+            averageHoursPerShift: Math.round(avgHoursPerShift * 100) / 100
+          },
+          activityMetrics: {
+            totalActions: emp.actorLogs.length,
+            actionBreakdown: activityBreakdown,
+            mostCommonAction: Object.entries(activityBreakdown)
+              .sort(([, a], [, b]) => b - a)[0]?.[0] || null
+          },
+          performance: {
+            attendanceRate: totalShifts > 0
+              ? Math.round((completedShifts / totalShifts) * 10000) / 100
+              : 0,
+            productivity: emp.actorLogs.length / (totalShifts || 1)
+          }
+        };
+      });
+
+      // Calculate company-wide summary
+      const summary = {
+        totalEmployees: employees.length,
+        activeEmployees: employees.filter(e => e.isActive).length,
+        totalHoursWorked: employeeReports.reduce((sum, r) => sum + r.timeMetrics.totalHoursWorked, 0),
+        totalActions: employeeReports.reduce((sum, r) => sum + r.activityMetrics.totalActions, 0),
+        avgHoursPerEmployee: employees.length > 0
+          ? employeeReports.reduce((sum, r) => sum + r.timeMetrics.totalHoursWorked, 0) / employees.length
+          : 0,
+        avgAttendanceRate: employees.length > 0
+          ? employeeReports.reduce((sum, r) => sum + r.performance.attendanceRate, 0) / employees.length
+          : 0
+      };
+
+      res.json({
+        success: true,
+        data: {
+          employees: employeeReports,
+          summary: {
+            ...summary,
+            totalHoursWorked: Math.round(summary.totalHoursWorked * 100) / 100,
+            avgHoursPerEmployee: Math.round(summary.avgHoursPerEmployee * 100) / 100,
+            avgAttendanceRate: Math.round(summary.avgAttendanceRate * 100) / 100
+          },
+          filters: {
+            startDate,
+            endDate,
+            employeeCpf
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Get consolidated report error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to generate consolidated report',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = EmployeeController;

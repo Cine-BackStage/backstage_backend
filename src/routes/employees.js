@@ -674,4 +674,98 @@ router.get('/:cpf/metrics',
   EmployeeController.getEmployeeMetrics
 );
 
+/**
+ * @swagger
+ * /api/employees/reports/consolidated:
+ *   get:
+ *     summary: Get consolidated employee reports (US-026)
+ *     description: Generate comprehensive reports for all employees with time tracking, activity metrics, and performance indicators
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Start date for the report period
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: End date for the report period
+ *       - in: query
+ *         name: employeeCpf
+ *         schema:
+ *           type: string
+ *           minLength: 11
+ *           maxLength: 11
+ *         description: Filter by specific employee CPF
+ *     responses:
+ *       200:
+ *         description: Consolidated report generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     employees:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           employee:
+ *                             type: object
+ *                           timeMetrics:
+ *                             type: object
+ *                             properties:
+ *                               totalHoursWorked:
+ *                                 type: number
+ *                               totalShifts:
+ *                                 type: integer
+ *                               averageHoursPerShift:
+ *                                 type: number
+ *                           activityMetrics:
+ *                             type: object
+ *                           performance:
+ *                             type: object
+ *                             properties:
+ *                               attendanceRate:
+ *                                 type: number
+ *                               productivity:
+ *                                 type: number
+ *                     summary:
+ *                       type: object
+ *                       properties:
+ *                         totalEmployees:
+ *                           type: integer
+ *                         activeEmployees:
+ *                           type: integer
+ *                         totalHoursWorked:
+ *                           type: number
+ *                         avgHoursPerEmployee:
+ *                           type: number
+ *                         avgAttendanceRate:
+ *                           type: number
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - insufficient permissions
+ */
+router.get('/reports/consolidated',
+  authenticateEmployee,
+  authorizeRoles('ADMIN', 'MANAGER'),
+  auditLogger('VIEW_CONSOLIDATED_REPORT', 'EMPLOYEE'),
+  EmployeeController.getConsolidatedReport
+);
+
 module.exports = router;
