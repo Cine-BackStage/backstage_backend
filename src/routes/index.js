@@ -9,6 +9,8 @@ const employeeRoutes = require('./employees');
 const systemAdminRoutes = require('./systemAdmin');
 const roomRoutes = require('./rooms');
 const inventoryRoutes = require('./inventory');
+const customerRoutes = require('./customers');
+const discountRoutes = require('./discounts');
 
 // Mount route modules
 router.use('/sessions', sessionRoutes);
@@ -19,6 +21,8 @@ router.use('/employees', employeeRoutes);
 router.use('/system-admin', systemAdminRoutes);
 router.use('/rooms', roomRoutes);
 router.use('/inventory', inventoryRoutes);
+router.use('/customers', customerRoutes);
+router.use('/discounts', discountRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
@@ -45,6 +49,8 @@ router.get('/', (req, res) => {
       'system-admin': '/api/system-admin',
       rooms: '/api/rooms',
       inventory: '/api/inventory',
+      customers: '/api/customers',
+      discounts: '/api/discounts',
       health: '/api/health'
     },
     documentation: {
