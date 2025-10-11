@@ -851,7 +851,7 @@ class InventoryController {
         db.auditLog.findMany({
           where,
           include: {
-            employee: {
+            actor: {
               include: {
                 person: {
                   select: {
