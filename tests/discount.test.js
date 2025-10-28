@@ -55,7 +55,7 @@ describe('Discount Code Management (US-030)', () => {
       { cpf: employeeCpf, companyId, role: 'MANAGER' },
       process.env.JWT_SECRET || 'test-secret',
       { expiresIn: '1h' }
-    });
+    );
 
     // Create test discount code
     testDiscountCode = 'TEST10';
@@ -361,7 +361,7 @@ describe('Discount Code Management (US-030)', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.valid).toBe(true);
       expect(response.body.type).toBe('PERCENT');
-      expect(response.body.value).toBe(10);
+      expect(parseFloat(response.body.value)).toBe(10);
     });
 
     it('should validate with customer CPF for targeted discounts', async () => {

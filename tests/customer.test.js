@@ -15,11 +15,28 @@ describe('Customer Management (US-027, US-028, US-029, US-031)', () => {
   let testCustomerCpf;
 
   beforeAll(async () => {
+    // Clean up any existing test data first
+    const existingCompany = await db.company.findFirst({
+      where: { cnpj: '98765432000177' }
+    });
+
+    if (existingCompany) {
+      await db.timeEntry.deleteMany({ where: { companyId: existingCompany.id } });
+      await db.auditLog.deleteMany({ where: { companyId: existingCompany.id } });
+      await db.customer.deleteMany({ where: { companyId: existingCompany.id } });
+      await db.employee.deleteMany({ where: { companyId: existingCompany.id } });
+      await db.company.delete({ where: { id: existingCompany.id } });
+    }
+
+    // Clean up test persons
+    await db.person.deleteMany({ where: { cpf: { in: ['11111111111', '22222222222'] } } }).catch(() => {});
+    await db.person.deleteMany({ where: { cpf: { startsWith: '333' } } }).catch(() => {});
+
     // Create test company
     const company = await db.company.create({
       data: {
         name: 'Test Cinema Customers',
-        cnpj: '98765432000188',
+        cnpj: '98765432000177',
         tradeName: 'Customer Test Cinema',
         isActive: true
       }
@@ -80,14 +97,26 @@ describe('Customer Management (US-027, US-028, US-029, US-031)', () => {
   });
 
   afterAll(async () => {
-    // Cleanup
-    await db.customer.deleteMany({ where: { companyId } });
-    await db.employee.deleteMany({ where: { companyId } });
-    await db.person.delete({ where: { cpf: employeeCpf } });
-    await db.person.deleteMany({ where: { cpf: { startsWith: '333' } } });
-    await db.person.deleteMany({ where: { cpf: testCustomerCpf } });
-    await db.company.delete({ where: { id: companyId } });
-    await db.$disconnect();
+    try {
+      // Cleanup in correct order
+      if (companyId) {
+        await db.timeEntry.deleteMany({ where: { companyId } });
+        await db.auditLog.deleteMany({ where: { companyId } });
+        await db.customer.deleteMany({ where: { companyId } });
+        await db.employee.deleteMany({ where: { companyId } });
+        await db.company.delete({ where: { id: companyId } });
+      }
+      if (employeeCpf) {
+        await db.person.delete({ where: { cpf: employeeCpf } }).catch(() => {});
+      }
+      await db.person.deleteMany({ where: { cpf: { startsWith: '333' } } });
+      if (testCustomerCpf) {
+        await db.person.delete({ where: { cpf: testCustomerCpf } }).catch(() => {});
+      }
+      await db.$disconnect();
+    } catch (error) {
+      console.error('Cleanup error:', error.message);
+    }
   });
 
   // ===== US-027: Create customer profiles =====
