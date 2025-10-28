@@ -22,6 +22,19 @@ const updateStatusSchema = Joi.object({
 });
 
 class SessionController {
+  constructor() {
+    // Bind all methods to preserve 'this' context
+    this.checkSessionConflicts = this.checkSessionConflicts.bind(this);
+    this.getBasePrice = this.getBasePrice.bind(this);
+    this.getAllSessions = this.getAllSessions.bind(this);
+    this.getSessionById = this.getSessionById.bind(this);
+    this.getSessionSeats = this.getSessionSeats.bind(this);
+    this.createSession = this.createSession.bind(this);
+    this.updateSession = this.updateSession.bind(this);
+    this.updateSessionStatus = this.updateSessionStatus.bind(this);
+    this.deleteSession = this.deleteSession.bind(this);
+  }
+
   // Helper function to check for session conflicts
   async checkSessionConflicts(roomId, startTime, endTime, excludeSessionId = null) {
     const where = {

@@ -310,11 +310,14 @@ describe('Integration: Ticket Purchase Flow', () => {
           value: 10,
           validFrom: new Date().toISOString(),
           validTo: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          maxUses: 100,
-          isActive: true
-        })
-        .expect(201);
+          maxUses: 100
+        });
 
+      if (response.status !== 201) {
+        console.error('Discount creation failed:', response.status, response.body);
+      }
+
+      expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data.code).toBe('INTEGRATION10');
       discountCode = response.body.data.code;
