@@ -208,8 +208,14 @@ class MovieController {
 
       const movie = await db.movie.create({
         data: {
-          ...value,
-          companyId
+          companyId,
+          title: value.title,
+          durationMin: value.duration_min,
+          genre: value.genre,
+          description: value.description,
+          rating: value.rating,
+          posterUrl: value.poster_url,
+          isActive: value.is_active !== undefined ? value.is_active : true
         }
       });
 
