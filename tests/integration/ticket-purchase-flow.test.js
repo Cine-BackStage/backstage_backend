@@ -216,9 +216,13 @@ describe('Integration: Ticket Purchase Flow', () => {
           layout: {
             aisles: [5]
           }
-        })
-        .expect(201);
+        });
 
+      if (response.status !== 201) {
+        console.error('Seat map creation failed:', response.status, response.body);
+      }
+
+      expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       seatMapId = response.body.data.id;
     });
@@ -260,7 +264,6 @@ describe('Integration: Ticket Purchase Flow', () => {
   describe('Step 2: Create Session', () => {
     it('should create a movie session', async () => {
       const startTime = new Date(Date.now() + 24 * 60 * 60 * 1000); // Tomorrow
-      const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // 2 hours later
 
       const response = await request(app)
         .post('/api/sessions')
@@ -269,11 +272,14 @@ describe('Integration: Ticket Purchase Flow', () => {
           movieId,
           roomId,
           startTime: startTime.toISOString(),
-          endTime: endTime.toISOString(),
-          status: 'SCHEDULED'
-        })
-        .expect(201);
+          bufferMinutes: 15
+        });
 
+      if (response.status !== 201) {
+        console.error('Session creation failed:', response.status, response.body);
+      }
+
+      expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data.movieId).toBe(movieId);
       expect(response.body.data.roomId).toBe(roomId);

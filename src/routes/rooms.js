@@ -327,7 +327,7 @@ router.get('/:id', authenticateEmployee, roomController.getRoomById);
  *       500:
  *         description: Server error
  */
-router.post('/', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), roomController.createRoom);
+router.post('/', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), roomController.createRoom);
 
 /**
  * @swagger
@@ -387,7 +387,7 @@ router.post('/', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), roo
  *       500:
  *         description: Server error
  */
-router.put('/:id', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), roomController.updateRoom);
+router.put('/:id', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), roomController.updateRoom);
 
 /**
  * @swagger
@@ -425,7 +425,7 @@ router.put('/:id', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), r
  *       500:
  *         description: Server error
  */
-router.delete('/:id', authenticateEmployee, authorizeRoles(['ADMIN']), roomController.deleteRoom);
+router.delete('/:id', authenticateEmployee, authorizeRoles('ADMIN'), roomController.deleteRoom);
 
 /**
  * @swagger
@@ -456,7 +456,7 @@ router.delete('/:id', authenticateEmployee, authorizeRoles(['ADMIN']), roomContr
  *       500:
  *         description: Server error
  */
-router.patch('/:id/activate', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), roomController.activateRoom);
+router.patch('/:id/activate', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), roomController.activateRoom);
 
 // ===== SEAT MAP ROUTES =====
 
@@ -574,7 +574,7 @@ router.get('/seat-maps/:id', authenticateEmployee, roomController.getSeatMapById
  *       500:
  *         description: Server error
  */
-router.post('/seat-maps', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), roomController.createSeatMap);
+router.post('/seat-maps', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), roomController.createSeatMap);
 
 /**
  * @swagger
@@ -627,7 +627,7 @@ router.post('/seat-maps', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMI
  *       500:
  *         description: Server error
  */
-router.put('/seat-maps/:id', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), roomController.updateSeatMap);
+router.put('/seat-maps/:id', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), roomController.updateSeatMap);
 
 /**
  * @swagger
@@ -660,7 +660,7 @@ router.put('/seat-maps/:id', authenticateEmployee, authorizeRoles(['MANAGER', 'A
  *       500:
  *         description: Server error
  */
-router.delete('/seat-maps/:id', authenticateEmployee, authorizeRoles(['ADMIN']), roomController.deleteSeatMap);
+router.delete('/seat-maps/:id', authenticateEmployee, authorizeRoles('ADMIN'), roomController.deleteSeatMap);
 
 /**
  * @swagger
@@ -738,7 +738,7 @@ router.delete('/seat-maps/:id', authenticateEmployee, authorizeRoles(['ADMIN']),
  *       500:
  *         description: Server error
  */
-router.post('/seat-maps/:seatMapId/seats', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), roomController.createSeats);
+router.post('/seat-maps/:seatMapId/seats', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), roomController.createSeats);
 
 // ===== ROOM TYPE PRICING ROUTES =====
 
@@ -813,6 +813,6 @@ router.get('/pricing/room-types', authenticateEmployee, roomController.getRoomTy
  *       500:
  *         description: Server error
  */
-router.post('/pricing/room-types', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), roomController.setRoomTypePrice);
+router.post('/pricing/room-types', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), roomController.setRoomTypePrice);
 
 module.exports = router;

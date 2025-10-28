@@ -193,7 +193,7 @@ router.get('/:id/seats', authenticateEmployee, sessionController.getSessionSeats
  *       500:
  *         description: Server error
  */
-router.post('/', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), sessionController.createSession);
+router.post('/', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), sessionController.createSession);
 
 /**
  * @swagger
@@ -246,7 +246,7 @@ router.post('/', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), ses
  *       500:
  *         description: Server error
  */
-router.put('/:id', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), sessionController.updateSession);
+router.put('/:id', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), sessionController.updateSession);
 
 /**
  * @swagger
@@ -330,6 +330,6 @@ router.patch('/:id/status', authenticateEmployee, sessionController.updateSessio
  *       500:
  *         description: Server error
  */
-router.delete('/:id', authenticateEmployee, authorizeRoles(['MANAGER', 'ADMIN']), sessionController.deleteSession);
+router.delete('/:id', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), sessionController.deleteSession);
 
 module.exports = router;
