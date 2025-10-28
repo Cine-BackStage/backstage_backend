@@ -15,6 +15,8 @@ RUN npm install
 
 # Copy source code
 COPY src/ ./src/
+COPY scripts/ ./scripts/
+COPY tests/ ./tests/
 COPY .env.example ./.env
 
 # Create non-root user

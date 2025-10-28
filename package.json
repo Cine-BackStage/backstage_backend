@@ -32,7 +32,9 @@
     "seed:multitenant": "node src/database/seed-multitenant.js",
     "token:multitenant": "node scripts/generate-token-multitenant.js",
     "token:sysadmin": "node scripts/generate-sysadmin-token.js",
-    "token:sysadmin:verbose": "node scripts/generate-sysadmin-token.js --verbose"
+    "token:sysadmin:verbose": "node scripts/generate-sysadmin-token.js --verbose",
+    "test:integration": "jest tests/integration/",
+    "test:integration:startup": "./scripts/run-integration-tests.sh"
   },
   "dependencies": {
     "@prisma/client": "^5.6.0",

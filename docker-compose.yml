@@ -59,7 +59,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: npm run dev
+    command: /bin/sh /app/scripts/start-with-tests.sh
 
 volumes:
   postgres_data:
