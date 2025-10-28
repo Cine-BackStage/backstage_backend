@@ -339,35 +339,133 @@ describe('Integration: Ticket Purchase Flow', () => {
   describe('Step 4: Purchase Tickets', () => {
     let saleId;
 
-    it('should create a sale with tickets and discount', async () => {
+    it('should create a sale', async () => {
       const response = await request(app)
         .post('/api/sales')
         .set('Authorization', `Bearer ${cashierToken}`)
         .send({
-          buyerCpf: customerCpf,
-          items: [
-            {
-              type: 'TICKET',
-              sessionId,
-              seatIds: ['A1', 'A2'],
-              price: 30.00,
-              quantity: 2
-            }
-          ],
-          payments: [
-            {
-              method: 'CREDIT_CARD',
-              amount: 54.00 // 60 - 10% = 54
-            }
-          ],
-          discountCode: discountCode
-        })
-        .expect(201);
+          buyerCpf: customerCpf
+        });
 
+      if (response.status !== 201) {
+        console.error('Sale creation failed:', response.status, response.body);
+      }
+
+      expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.totalAmount).toBeDefined();
-      expect(response.body.data.discountAmount).toBeDefined();
+      expect(response.body.data.id).toBeDefined();
       saleId = response.body.data.id;
+    });
+
+    it('should add tickets to sale', async () => {
+      // Create tickets for the session seats
+      const ticketResponse1 = await request(app)
+        .post('/api/tickets')
+        .set('Authorization', `Bearer ${cashierToken}`)
+        .send({
+          sessionId,
+          seatMapId,
+          seatId: 'A1',
+          price: 30.00
+        });
+
+      const ticketResponse2 = await request(app)
+        .post('/api/tickets')
+        .set('Authorization', `Bearer ${cashierToken}`)
+        .send({
+          sessionId,
+          seatMapId,
+          seatId: 'A2',
+          price: 30.00
+        });
+
+      if (ticketResponse1.status !== 201) {
+        console.error('Ticket 1 creation failed:', ticketResponse1.status, ticketResponse1.body);
+      }
+      if (ticketResponse2.status !== 201) {
+        console.error('Ticket 2 creation failed:', ticketResponse2.status, ticketResponse2.body);
+      }
+
+      expect(ticketResponse1.status).toBe(201);
+      expect(ticketResponse2.status).toBe(201);
+
+      // Add tickets as items to the sale
+      const itemResponse = await request(app)
+        .post(`/api/sales/${saleId}/items`)
+        .set('Authorization', `Bearer ${cashierToken}`)
+        .send({
+          type: 'TICKET',
+          ticketId: ticketResponse1.body.data.id,
+          price: 30.00,
+          quantity: 1
+        });
+
+      const itemResponse2 = await request(app)
+        .post(`/api/sales/${saleId}/items`)
+        .set('Authorization', `Bearer ${cashierToken}`)
+        .send({
+          type: 'TICKET',
+          ticketId: ticketResponse2.body.data.id,
+          price: 30.00,
+          quantity: 1
+        });
+
+      if (itemResponse.status !== 201) {
+        console.error('Add item 1 failed:', itemResponse.status, itemResponse.body);
+      }
+      if (itemResponse2.status !== 201) {
+        console.error('Add item 2 failed:', itemResponse2.status, itemResponse2.body);
+      }
+
+      expect(itemResponse.status).toBe(201);
+      expect(itemResponse2.status).toBe(201);
+    });
+
+    it('should apply discount to sale', async () => {
+      const response = await request(app)
+        .post(`/api/sales/${saleId}/discount`)
+        .set('Authorization', `Bearer ${cashierToken}`)
+        .send({
+          code: discountCode
+        });
+
+      if (response.status !== 200) {
+        console.error('Apply discount failed:', response.status, response.body);
+      }
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+
+    it('should add payment to sale', async () => {
+      const response = await request(app)
+        .post(`/api/sales/${saleId}/payments`)
+        .set('Authorization', `Bearer ${cashierToken}`)
+        .send({
+          method: 'CREDIT_CARD',
+          amount: 54.00
+        });
+
+      if (response.status !== 201) {
+        console.error('Add payment failed:', response.status, response.body);
+      }
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+    });
+
+    it('should finalize the sale', async () => {
+      const response = await request(app)
+        .post(`/api/sales/${saleId}/finalize`)
+        .set('Authorization', `Bearer ${cashierToken}`);
+
+      if (response.status !== 200) {
+        console.error('Finalize sale failed:', response.status, response.body);
+      }
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.status).toBe('COMPLETED');
     });
 
     it('should verify tickets were created', async () => {
