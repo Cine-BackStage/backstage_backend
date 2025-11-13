@@ -237,6 +237,36 @@ router.delete('/:saleId/items/:itemId', authenticateEmployee, saleController.rem
 
 /**
  * @swagger
+ * /api/sales/discount/validate:
+ *   post:
+ *     summary: Validate discount code without applying to sale
+ *     tags: [Sales]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - code
+ *               - subtotal
+ *             properties:
+ *               code:
+ *                 type: string
+ *               subtotal:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Discount code validated successfully
+ *       400:
+ *         description: Invalid or expired discount code
+ */
+router.post('/discount/validate', authenticateEmployee, saleController.validateDiscount);
+
+/**
+ * @swagger
  * /api/sales/{saleId}/discount:
  *   post:
  *     summary: Apply discount code to sale (US-012)

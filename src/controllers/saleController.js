@@ -322,9 +322,9 @@ class SaleController {
 
         // Check stock availability
         if (item.qtyOnHand < value.quantity) {
-          return res.status(400).json({
+          return res.status(409).json({
             success: false,
-            message: 'Insufficient stock',
+            message: 'Estoque insuficiente',
             available: item.qtyOnHand,
             requested: value.quantity
           });
@@ -438,6 +438,95 @@ class SaleController {
       res.status(500).json({
         success: false,
         message: 'Error removing item from sale',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Validate discount code (for local sales before finalization)
+   */
+  async validateDiscount(req, res) {
+    try {
+      const companyId = req.employee.companyId;
+
+      const schema = Joi.object({
+        code: Joi.string().max(50).required(),
+        subtotal: Joi.number().min(0).required()
+      });
+
+      const { error, value } = schema.validate(req.body);
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: error.details.map(d => d.message)
+        });
+      }
+
+      // Verify discount code exists and is valid
+      const discountCode = await db.discountCode.findFirst({
+        where: {
+          code: value.code,
+          companyId
+        }
+      });
+
+      if (!discountCode) {
+        return res.status(404).json({
+          success: false,
+          message: 'Código de desconto não encontrado'
+        });
+      }
+
+      const now = new Date();
+      if (discountCode.validFrom > now || discountCode.validTo < now) {
+        return res.status(400).json({
+          success: false,
+          message: 'Código de desconto expirado ou ainda não válido'
+        });
+      }
+
+      // Check max uses
+      if (discountCode.maxUses) {
+        const usageCount = await db.saleDiscount.count({
+          where: {
+            code: value.code,
+            companyId
+          }
+        });
+
+        if (usageCount >= discountCode.maxUses) {
+          return res.status(400).json({
+            success: false,
+            message: 'Limite de uso do código atingido'
+          });
+        }
+      }
+
+      // Calculate discount amount
+      let discountAmount = 0;
+      if (discountCode.type === 'PERCENT') {
+        discountAmount = (value.subtotal * parseFloat(discountCode.value)) / 100;
+      } else if (discountCode.type === 'AMOUNT') {
+        discountAmount = Math.min(parseFloat(discountCode.value), value.subtotal);
+      }
+
+      res.json({
+        success: true,
+        data: {
+          code: discountCode.code,
+          type: discountCode.type,
+          value: parseFloat(discountCode.value),
+          discountAmount,
+          newTotal: value.subtotal - discountAmount
+        }
+      });
+    } catch (error) {
+      console.error('Error validating discount:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error validating discount',
         error: error.message
       });
     }
