@@ -122,10 +122,12 @@ class EmployeeController {
           token,
           employee: {
             cpf: employee.cpf,
+            companyId: employee.companyId,
             employeeId: employee.employeeId,
             role: employee.role,
             fullName: employee.person.fullName,
             email: employee.person.email,
+            isActive: employee.isActive,
             permissions: employee.permissions,
             lastLogin: employee.lastLogin
           }
