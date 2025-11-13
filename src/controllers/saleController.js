@@ -1169,6 +1169,128 @@ class SaleController {
       });
     }
   }
+
+  /**
+   * Get sales summary for dashboard
+   * Returns today's revenue, transactions, and growth metrics
+   */
+  async getSalesSummary(req, res) {
+    try {
+      const companyId = req.employee.companyId;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
+      const monthAgo = new Date(today);
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+      const lastMonthStart = new Date(monthAgo);
+      lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
+
+      // Get today's sales
+      const todaySales = await db.sale.findMany({
+        where: {
+          companyId,
+          status: 'FINALIZED',
+          createdAt: {
+            gte: today,
+            lt: tomorrow
+          }
+        },
+        select: {
+          grandTotal: true
+        }
+      });
+
+      const todayRevenue = todaySales.reduce((sum, sale) => sum + parseFloat(sale.grandTotal), 0);
+      const todayTransactions = todaySales.length;
+
+      // Get week revenue
+      const weekSales = await db.sale.findMany({
+        where: {
+          companyId,
+          status: 'FINALIZED',
+          createdAt: {
+            gte: weekAgo,
+            lt: tomorrow
+          }
+        },
+        select: {
+          grandTotal: true
+        }
+      });
+
+      const weekRevenue = weekSales.reduce((sum, sale) => sum + parseFloat(sale.grandTotal), 0);
+
+      // Get month revenue
+      const monthSales = await db.sale.findMany({
+        where: {
+          companyId,
+          status: 'FINALIZED',
+          createdAt: {
+            gte: monthAgo,
+            lt: tomorrow
+          }
+        },
+        select: {
+          grandTotal: true
+        }
+      });
+
+      const monthRevenue = monthSales.reduce((sum, sale) => sum + parseFloat(sale.grandTotal), 0);
+
+      // Get last month revenue for growth calculation
+      const lastMonthSales = await db.sale.findMany({
+        where: {
+          companyId,
+          status: 'FINALIZED',
+          createdAt: {
+            gte: lastMonthStart,
+            lt: monthAgo
+          }
+        },
+        select: {
+          grandTotal: true
+        }
+      });
+
+      const lastMonthRevenue = lastMonthSales.reduce((sum, sale) => sum + parseFloat(sale.grandTotal), 0);
+
+      // Calculate growth percentage
+      const growthPercentage = lastMonthRevenue > 0
+        ? ((monthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+        : 0;
+
+      // Calculate average ticket price
+      const averageTicketPrice = todayTransactions > 0
+        ? todayRevenue / todayTransactions
+        : 0;
+
+      res.status(200).json({
+        success: true,
+        data: {
+          todayRevenue,
+          todayTransactions,
+          averageTicketPrice,
+          weekRevenue,
+          monthRevenue,
+          growthPercentage
+        }
+      });
+    } catch (error) {
+      console.error('Error getting sales summary:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error getting sales summary',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = new SaleController();

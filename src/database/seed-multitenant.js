@@ -79,21 +79,25 @@ const MOVIES_DATA = [
 const INVENTORY_DATA = [
   // CineMax Inventory
   [
-    { sku: 'POPCORN-L', name: 'Large Popcorn', unitPrice: 18.50, qtyOnHand: 150, category: 'Snacks' },
-    { sku: 'SODA-M', name: 'Medium Soda', unitPrice: 12.00, qtyOnHand: 200, category: 'Beverages' },
-    { sku: 'COMBO-1', name: 'Movie Combo', unitPrice: 28.00, qtyOnHand: 80, category: 'Combos', isCombo: true }
+    { sku: 'POPCORN-L', name: 'Large Popcorn', unitPrice: 18.50, qtyOnHand: 150, reorderLevel: 30, category: 'Snacks' },
+    { sku: 'SODA-M', name: 'Medium Soda', unitPrice: 12.00, qtyOnHand: 15, reorderLevel: 40, category: 'Beverages' }, // LOW STOCK
+    { sku: 'COMBO-1', name: 'Movie Combo', unitPrice: 28.00, qtyOnHand: 80, reorderLevel: 20, category: 'Combos', isCombo: true },
+    { sku: 'CANDY-M', name: 'Assorted Candy', unitPrice: 8.50, qtyOnHand: 5, reorderLevel: 25, category: 'Snacks' }, // LOW STOCK
+    { sku: 'WATER-B', name: 'Bottled Water', unitPrice: 5.00, qtyOnHand: 180, reorderLevel: 50, category: 'Beverages' }
   ],
   // MovieTime Inventory
   [
-    { sku: 'POPCORN-XL', name: 'Extra Large Popcorn', unitPrice: 22.00, qtyOnHand: 120, category: 'Snacks' },
-    { sku: 'JUICE-N', name: 'Natural Juice', unitPrice: 15.50, qtyOnHand: 100, category: 'Beverages' },
-    { sku: 'NACHOS-S', name: 'Nachos with Cheese', unitPrice: 16.00, qtyOnHand: 75, category: 'Snacks' }
+    { sku: 'POPCORN-XL', name: 'Extra Large Popcorn', unitPrice: 22.00, qtyOnHand: 120, reorderLevel: 30, category: 'Snacks' },
+    { sku: 'JUICE-N', name: 'Natural Juice', unitPrice: 15.50, qtyOnHand: 12, reorderLevel: 30, category: 'Beverages' }, // LOW STOCK
+    { sku: 'NACHOS-S', name: 'Nachos with Cheese', unitPrice: 16.00, qtyOnHand: 75, reorderLevel: 20, category: 'Snacks' },
+    { sku: 'HOTDOG-R', name: 'Regular Hot Dog', unitPrice: 14.00, qtyOnHand: 8, reorderLevel: 20, category: 'Food' } // LOW STOCK
   ],
   // Premium Screens Inventory
   [
-    { sku: 'WINE-G', name: 'Premium Wine Glass', unitPrice: 35.00, qtyOnHand: 50, category: 'Beverages' },
-    { sku: 'TRUFFLE-P', name: 'Chocolate Truffles', unitPrice: 25.00, qtyOnHand: 40, category: 'Premium' },
-    { sku: 'CHEESE-B', name: 'Artisan Cheese Board', unitPrice: 45.00, qtyOnHand: 30, category: 'Premium' }
+    { sku: 'WINE-G', name: 'Premium Wine Glass', unitPrice: 35.00, qtyOnHand: 50, reorderLevel: 15, category: 'Beverages' },
+    { sku: 'TRUFFLE-P', name: 'Chocolate Truffles', unitPrice: 25.00, qtyOnHand: 6, reorderLevel: 15, category: 'Premium' }, // LOW STOCK
+    { sku: 'CHEESE-B', name: 'Artisan Cheese Board', unitPrice: 45.00, qtyOnHand: 30, reorderLevel: 10, category: 'Premium' },
+    { sku: 'CHAMPAGNE', name: 'Champagne Bottle', unitPrice: 80.00, qtyOnHand: 3, reorderLevel: 10, category: 'Premium' } // LOW STOCK
   ]
 ];
 
@@ -257,6 +261,30 @@ class MultiTenantSeeder {
           phone: `(11) 5555-${companyIndex}${companyIndex}${companyIndex}${companyIndex}`,
           birthDate: new Date('1990-08-22'),
           loyaltyPoints: Math.floor(Math.random() * 500)
+        },
+        {
+          cpf: `${companyIndex}66666666${String(companyIndex).padStart(2, '0')}`,
+          fullName: `Pedro Oliveira ${companyIndex}`,
+          email: `pedro${companyIndex}@email.com`,
+          phone: `(11) 4444-${companyIndex}${companyIndex}${companyIndex}${companyIndex}`,
+          birthDate: new Date('1992-03-10'),
+          loyaltyPoints: Math.floor(Math.random() * 750)
+        },
+        {
+          cpf: `${companyIndex}77777777${String(companyIndex).padStart(2, '0')}`,
+          fullName: `Ana Costa ${companyIndex}`,
+          email: `ana${companyIndex}@email.com`,
+          phone: `(11) 3333-${companyIndex}${companyIndex}${companyIndex}${companyIndex}`,
+          birthDate: new Date('1988-11-28'),
+          loyaltyPoints: Math.floor(Math.random() * 600)
+        },
+        {
+          cpf: `${companyIndex}88888888${String(companyIndex).padStart(2, '0')}`,
+          fullName: `Carlos Ferreira ${companyIndex}`,
+          email: `carlos${companyIndex}@email.com`,
+          phone: `(11) 2222-${companyIndex}${companyIndex}${companyIndex}${companyIndex}`,
+          birthDate: new Date('1995-07-03'),
+          loyaltyPoints: Math.floor(Math.random() * 400)
         }
       ];
 
@@ -378,13 +406,13 @@ class MultiTenantSeeder {
 
       // Create inventory items
       for (const itemData of inventory) {
-        const { category, isCombo, ...baseData } = itemData;
+        const { category, isCombo, reorderLevel, ...baseData } = itemData;
 
         const _inventoryItem = await prisma.inventoryItem.create({
           data: {
             companyId: company.id,
             ...baseData,
-            reorderLevel: Math.floor(baseData.qtyOnHand * 0.2), // 20% of stock
+            reorderLevel: reorderLevel || Math.floor(baseData.qtyOnHand * 0.2), // Use explicit or 20% of stock
             barcode: `${company.id.slice(-4)}${itemData.sku}`,
             isActive: true
           }
@@ -472,6 +500,19 @@ class MultiTenantSeeder {
           const endTime = new Date(startTime);
           endTime.setMinutes(startTime.getMinutes() + movie.durationMin + 30); // Movie + 30min cleanup
 
+          // Determine session status
+          let status = 'SCHEDULED';
+          const now = new Date();
+
+          // If session is today and has started but not ended, mark as IN_PROGRESS
+          if (day === 0 && startTime <= now && endTime > now) {
+            status = 'IN_PROGRESS';
+          }
+          // If session is in the past, mark as COMPLETED
+          else if (endTime < now) {
+            status = 'COMPLETED';
+          }
+
           await prisma.session.create({
             data: {
               companyId: company.id,
@@ -479,7 +520,8 @@ class MultiTenantSeeder {
               roomId: room.id,
               startTime,
               endTime,
-              status: 'SCHEDULED'
+              basePrice: 25.00,
+              status
             }
           });
         }
@@ -544,6 +586,112 @@ class MultiTenantSeeder {
     }
   }
 
+  async generateSampleSales(companies) {
+    console.log('💰 Creating sample sales...');
+
+    for (const company of companies) {
+      const cashiers = await prisma.employee.findMany({
+        where: {
+          companyId: company.id,
+          role: { in: ['CASHIER', 'ADMIN', 'MANAGER'] }
+        }
+      });
+
+      const customers = await prisma.customer.findMany({
+        where: { companyId: company.id }
+      });
+
+      const inventoryItems = await prisma.inventoryItem.findMany({
+        where: { companyId: company.id }
+      });
+
+      if (cashiers.length === 0 || inventoryItems.length === 0) {
+        console.log(`  ⚠️  Skipping sales for ${company.tradeName} - missing cashiers or inventory`);
+        continue;
+      }
+
+      // Create sales for today
+      const today = new Date();
+      const salesToday = 20 + Math.floor(Math.random() * 16); // 20-35 sales today
+
+      for (let i = 0; i < salesToday; i++) {
+        const saleTime = new Date(today);
+        saleTime.setHours(10 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 60), 0, 0);
+
+        const cashier = cashiers[Math.floor(Math.random() * cashiers.length)];
+        const customer = customers.length > 0 ? customers[Math.floor(Math.random() * customers.length)] : null;
+
+        // Calculate sale totals
+        const numItems = 1 + Math.floor(Math.random() * 3); // 1-3 items per sale
+        let subTotal = 0;
+
+        const saleItems = [];
+        for (let j = 0; j < numItems; j++) {
+          const item = inventoryItems[Math.floor(Math.random() * inventoryItems.length)];
+          const quantity = 1 + Math.floor(Math.random() * 2); // 1-2 quantity
+          const itemTotal = parseFloat(item.unitPrice) * quantity;
+          subTotal += itemTotal;
+
+          saleItems.push({
+            sku: item.sku,
+            quantity,
+            unitPrice: parseFloat(item.unitPrice),
+            totalPrice: itemTotal
+          });
+        }
+
+        const discountTotal = Math.random() < 0.3 ? subTotal * 0.1 : 0; // 30% chance of 10% discount
+        const taxTotal = 0; // No tax for now
+        const grandTotal = subTotal - discountTotal + taxTotal;
+
+        // Create sale
+        const sale = await prisma.sale.create({
+          data: {
+            companyId: company.id,
+            cashierCpf: cashier.cpf,
+            buyerCpf: customer?.cpf,
+            subTotal,
+            discountTotal,
+            taxTotal,
+            grandTotal,
+            status: 'FINALIZED',
+            createdAt: saleTime,
+            updatedAt: saleTime
+          }
+        });
+
+        // Create sale items
+        for (const saleItemData of saleItems) {
+          const item = inventoryItems.find(i => i.sku === saleItemData.sku);
+          await prisma.saleItem.create({
+            data: {
+              saleId: sale.id,
+              companyId: company.id,
+              sku: saleItemData.sku,
+              quantity: saleItemData.quantity,
+              unitPrice: saleItemData.unitPrice,
+              lineTotal: saleItemData.totalPrice,
+              description: item?.name || 'Item'
+            }
+          });
+        }
+
+        // Create payment
+        await prisma.payment.create({
+          data: {
+            companyId: company.id,
+            saleId: sale.id,
+            method: ['CASH', 'CARD', 'PIX'][Math.floor(Math.random() * 3)],
+            amount: grandTotal,
+            paidAt: saleTime
+          }
+        });
+      }
+
+      console.log(`  ✅ Created ${salesToday} sales for ${company.tradeName}`);
+    }
+  }
+
   async run() {
     try {
       console.log('🌱 Starting Multi-Tenant Seed Process...');
@@ -557,6 +705,7 @@ class MultiTenantSeeder {
       await this.createInventoryAndDiscounts(companies);
       await this.createSampleSessions(companies);
       await this.generateSampleTimeEntries(companies);
+      await this.generateSampleSales(companies);
 
       console.log('\n🎉 Multi-Tenant Seed Completed Successfully!');
       console.log('============================================');

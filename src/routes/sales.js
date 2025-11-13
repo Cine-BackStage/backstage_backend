@@ -114,6 +114,7 @@ router.get('/:id', authenticateEmployee, saleController.getSaleById);
  *       200:
  *         description: Report generated successfully
  */
+router.get('/reports/summary', authenticateEmployee, authorizeRoles('CASHIER', 'MANAGER', 'ADMIN'), saleController.getSalesSummary);
 router.get('/reports/detailed', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), saleController.getSalesReports);
 
 /**
