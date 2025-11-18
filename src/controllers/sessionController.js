@@ -333,19 +333,47 @@ class SessionController {
         });
       }
 
-      // Create a map of sold/reserved seats
+      // Create a map of sold/reserved seats from issued tickets
       const soldSeats = new Set(
         session.tickets
           .filter(t => t.status !== 'REFUNDED')
           .map(t => t.seatId)
       );
 
+      // Get seats that are reserved (temporary holds during checkout)
+      // Only consider non-expired reservations
+      const activeReservations = await db.seatReservation.findMany({
+        where: {
+          companyId,
+          sessionId: id,
+          expiresAt: {
+            gt: new Date() // Not expired
+          }
+        },
+        select: {
+          seatId: true
+        }
+      });
+
+      const reservedSeats = new Set(
+        activeReservations.map(r => r.seatId)
+      );
+
       // Add status to each seat
-      const seatsWithStatus = session.room.seatMap.seats.map(seat => ({
-        ...seat,
-        status: soldSeats.has(seat.id) ? 'SOLD' : 'AVAILABLE',
-        seatMapId: session.room.seatMap.id
-      }));
+      const seatsWithStatus = session.room.seatMap.seats.map(seat => {
+        let status = 'AVAILABLE';
+        if (soldSeats.has(seat.id)) {
+          status = 'SOLD';
+        } else if (reservedSeats.has(seat.id)) {
+          status = 'RESERVED';
+        }
+
+        return {
+          ...seat,
+          status,
+          seatMapId: session.room.seatMap.id
+        };
+      });
 
       // Group seats by row for easier frontend handling
       const seatMap = seatsWithStatus.reduce((acc, seat) => {
