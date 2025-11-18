@@ -303,8 +303,56 @@ class SaleController {
         });
       }
 
-      // If SKU provided, verify inventory item exists
-      if (value.sku) {
+      // Check if this is a ticket item (has sessionId and seatId)
+      const isTicket = value.sessionId && value.seatId;
+
+      // If ticket item, verify seat is available
+      if (isTicket) {
+        // Get session to find room's seatMapId
+        const session = await db.session.findFirst({
+          where: {
+            id: value.sessionId,
+            companyId
+          },
+          include: {
+            room: {
+              select: {
+                seatMapId: true
+              }
+            }
+          }
+        });
+
+        if (!session) {
+          return res.status(404).json({
+            success: false,
+            message: 'Session not found'
+          });
+        }
+
+        // Check if ticket already exists for this seat/session
+        const existingTicket = await db.ticket.findFirst({
+          where: {
+            companyId,
+            sessionId: value.sessionId,
+            seatMapId: session.room.seatMapId,
+            seatId: value.seatId
+          }
+        });
+
+        if (existingTicket) {
+          return res.status(409).json({
+            success: false,
+            message: 'Este assento já foi vendido para esta sessão'
+          });
+        }
+
+        // Note: Seat reservation check is done via seat-reservations API
+        // before adding items to sale, so we don't need to check here
+      }
+
+      // If SKU provided and NOT a ticket, verify inventory item exists
+      if (value.sku && !isTicket) {
         const item = await db.inventoryItem.findFirst({
           where: {
             sku: value.sku,
@@ -337,7 +385,7 @@ class SaleController {
         data: {
           saleId,
           companyId,
-          sku: value.sku || null,
+          sku: isTicket ? null : (value.sku || null),
           sessionId: value.sessionId || null,
           seatId: value.seatId || null,
           description: value.description,
@@ -809,51 +857,98 @@ class SaleController {
         });
       }
 
-      // Update inventory for items with SKU
-      for (const item of sale.items) {
-        if (item.sku) {
-          await db.inventoryItem.update({
-            where: {
-              companyId_sku: {
-                companyId,
-                sku: item.sku
+      // Use transaction to ensure atomicity - finalize sale first, then create tickets
+      const result = await db.$transaction(async (tx) => {
+        // Finalize sale first - if this fails, nothing else happens
+        const finalizedSale = await tx.sale.update({
+          where: { id: saleId },
+          data: {
+            status: 'FINALIZED'
+          },
+          include: {
+            cashier: {
+              include: {
+                person: true
               }
             },
-            data: {
-              qtyOnHand: {
-                decrement: item.quantity
+            buyer: {
+              include: {
+                person: true
               }
-            }
-          });
-        }
-      }
+            },
+            items: true,
+            payments: true,
+            discounts: true
+          }
+        });
 
-      // Finalize sale
-      const finalizedSale = await db.sale.update({
-        where: { id: saleId },
-        data: {
-          status: 'FINALIZED'
-        },
-        include: {
-          cashier: {
-            include: {
-              person: true
+        // Update inventory and create tickets ONLY after sale is finalized
+        for (const item of sale.items) {
+          if (item.sku) {
+            await tx.inventoryItem.update({
+              where: {
+                companyId_sku: {
+                  companyId,
+                  sku: item.sku
+                }
+              },
+              data: {
+                qtyOnHand: {
+                  decrement: item.quantity
+                }
+              }
+            });
+          } else if (item.sessionId && item.seatId) {
+            // This is a ticket item - create ticket record
+            const session = await tx.session.findFirst({
+              where: {
+                id: item.sessionId,
+                companyId
+              },
+              include: {
+                room: {
+                  select: {
+                    seatMapId: true
+                  }
+                }
+              }
+            });
+
+            if (session) {
+              // Generate QR code for ticket
+              const qrCode = `${companyId}-${item.sessionId}-${item.seatId}-${Date.now()}`;
+
+              await tx.ticket.create({
+                data: {
+                  companyId,
+                  sessionId: item.sessionId,
+                  seatMapId: session.room.seatMapId,
+                  seatId: item.seatId,
+                  saleId,
+                  price: item.unitPrice,
+                  status: 'ISSUED',
+                  qrCode
+                }
+              });
+
+              // Release seat reservation after ticket is created successfully
+              await tx.seatReservation.deleteMany({
+                where: {
+                  companyId,
+                  sessionId: item.sessionId,
+                  seatId: item.seatId
+                }
+              });
             }
-          },
-          buyer: {
-            include: {
-              person: true
-            }
-          },
-          items: true,
-          payments: true,
-          discounts: true
+          }
         }
+
+        return finalizedSale;
       });
 
       res.json({
         success: true,
-        data: finalizedSale,
+        data: result,
         change: totalPaid - parseFloat(sale.grandTotal),
         message: 'Sale finalized successfully'
       });
@@ -1376,6 +1471,86 @@ class SaleController {
       res.status(500).json({
         success: false,
         message: 'Error getting sales summary',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Clean up abandoned OPEN sales older than 15 minutes
+   * This prevents seats from being permanently locked
+   */
+  async cleanupAbandonedSales(req, res) {
+    try {
+      const companyId = req.employee.companyId;
+      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+
+      // Find all OPEN sales older than 15 minutes
+      const abandonedSales = await db.sale.findMany({
+        where: {
+          companyId,
+          status: 'OPEN',
+          createdAt: {
+            lt: fifteenMinutesAgo
+          }
+        },
+        select: {
+          id: true,
+          createdAt: true
+        }
+      });
+
+      if (abandonedSales.length === 0) {
+        return res.json({
+          success: true,
+          message: 'No abandoned sales found',
+          cleaned: 0
+        });
+      }
+
+      // Cancel all abandoned sales
+      const saleIds = abandonedSales.map(s => s.id);
+
+      await db.sale.updateMany({
+        where: {
+          id: {
+            in: saleIds
+          }
+        },
+        data: {
+          status: 'CANCELED'
+        }
+      });
+
+      // Log the cleanup action
+      await db.auditLog.create({
+        data: {
+          companyId,
+          actorCpf: req.employee.cpf,
+          action: 'CLEANUP_ABANDONED_SALES',
+          targetType: 'SALE',
+          targetId: null,
+          metadataJson: {
+            cleanedCount: abandonedSales.length,
+            saleIds: saleIds,
+            threshold: '15 minutes'
+          },
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent')
+        }
+      });
+
+      res.json({
+        success: true,
+        message: `Cleaned up ${abandonedSales.length} abandoned sale(s)`,
+        cleaned: abandonedSales.length,
+        saleIds
+      });
+    } catch (error) {
+      console.error('Error cleaning up abandoned sales:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error cleaning up abandoned sales',
         error: error.message
       });
     }

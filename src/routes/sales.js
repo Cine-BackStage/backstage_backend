@@ -424,4 +424,34 @@ router.post('/:saleId/cancel', authenticateEmployee, saleController.cancelSale);
  */
 router.post('/:saleId/refund', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), saleController.refundSale);
 
+/**
+ * @swagger
+ * /api/sales/cleanup/abandoned:
+ *   post:
+ *     summary: Clean up abandoned OPEN sales older than 15 minutes
+ *     description: Automatically cancels OPEN sales that have been inactive for more than 15 minutes to prevent seat locking
+ *     tags: [Sales]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Cleanup completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 cleaned:
+ *                   type: integer
+ *                 saleIds:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ */
+router.post('/cleanup/abandoned', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), saleController.cleanupAbandonedSales);
+
 module.exports = router;
