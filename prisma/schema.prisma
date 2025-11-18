@@ -127,6 +127,7 @@ model Company {
   timeEntries       TimeEntry[]
   tickets           Ticket[]
   payments          Payment[]
+  seatReservations  SeatReservation[]
   subscription      CompanySubscription?
 
   @@index([isActive])
@@ -303,8 +304,9 @@ model Seat {
   isActive     Boolean @default(true) @map("is_active")
 
   // Relations
-  seatMap SeatMap  @relation(fields: [seatMapId], references: [id])
-  tickets Ticket[]
+  seatMap      SeatMap           @relation(fields: [seatMapId], references: [id])
+  tickets      Ticket[]
+  reservations SeatReservation[]
 
   @@id([seatMapId, id])
   @@index([seatMapId, isActive])
@@ -359,10 +361,11 @@ model Session {
   updatedAt DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
   // Relations
-  company Company  @relation(fields: [companyId], references: [id])
-  movie   Movie    @relation(fields: [movieId], references: [id])
-  room    Room     @relation(fields: [roomId], references: [id])
-  tickets Ticket[]
+  company      Company           @relation(fields: [companyId], references: [id])
+  movie        Movie             @relation(fields: [movieId], references: [id])
+  room         Room              @relation(fields: [roomId], references: [id])
+  tickets      Ticket[]
+  reservations SeatReservation[]
 
   @@index([companyId])
   @@index([companyId, movieId])
@@ -397,6 +400,29 @@ model Ticket {
   @@index([companyId, sessionId])
   @@index([companyId, status])
   @@map("ticket")
+}
+
+model SeatReservation {
+  id               String   @id @default(uuid()) @db.Uuid
+  companyId        String   @map("company_id") @db.Uuid
+  sessionId        String   @map("session_id") @db.Uuid
+  seatMapId        String   @map("seat_map_id") @db.Uuid
+  seatId           String   @map("seat_id") @db.VarChar(10)
+  reservationToken String   @unique @map("reservation_token") @db.VarChar(100)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  expiresAt        DateTime @map("expires_at") @db.Timestamp(6)
+
+  // Relations
+  company Company @relation(fields: [companyId], references: [id])
+  session Session @relation(fields: [sessionId], references: [id])
+  seat    Seat    @relation(fields: [seatMapId, seatId], references: [seatMapId, id])
+
+  @@unique([companyId, sessionId, seatMapId, seatId])
+  @@index([companyId])
+  @@index([companyId, sessionId])
+  @@index([reservationToken])
+  @@index([expiresAt])
+  @@map("seat_reservation")
 }
 
 // ===== INVENTORY (COMPANY-SCOPED) =====

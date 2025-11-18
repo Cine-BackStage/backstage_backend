@@ -11,6 +11,7 @@ const roomRoutes = require('./rooms');
 const inventoryRoutes = require('./inventory');
 const customerRoutes = require('./customers');
 const discountRoutes = require('./discounts');
+const seatReservationRoutes = require('./seatReservations');
 
 // Mount route modules
 router.use('/sessions', sessionRoutes);
@@ -23,6 +24,7 @@ router.use('/rooms', roomRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/customers', customerRoutes);
 router.use('/discounts', discountRoutes);
+router.use('/seat-reservations', seatReservationRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
