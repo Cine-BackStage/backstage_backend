@@ -20,6 +20,10 @@ pids
 .env.development
 .env.test
 .env.production
+.env.railway
+
+# Allow example/template env files
+!.env*.example
 
 # Logs
 logs
