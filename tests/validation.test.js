@@ -351,7 +351,7 @@ describe('Validation Utils', () => {
         duration_min: 120,
         genre: 'Action',
         description: 'A great movie',
-        rating: 'PG-13',
+        rating: '12',
         poster_url: 'https://example.com/poster.jpg',
         is_active: true
       };
@@ -388,7 +388,7 @@ describe('Validation Utils', () => {
     });
 
     test('should validate all rating values', () => {
-      const ratings = ['G', 'PG', 'PG-13', 'R', 'NC-17', 'NR'];
+      const ratings = ['L', '10', '12', '14', '16', '18']; // Brazilian ratings
       ratings.forEach(rating => {
         const data = {
           title: 'Test',

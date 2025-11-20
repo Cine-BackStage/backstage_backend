@@ -140,26 +140,29 @@ const startServer = async () => {
   }
 };
 
-// Start server
-const serverPromise = startServer();
+// Start server only if not in test mode
+let serverPromise;
+if (process.env.NODE_ENV !== 'test') {
+  serverPromise = startServer();
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  const server = await serverPromise;
-  server.close(async () => {
-    await databaseService.disconnect();
-    console.log('Process terminated');
+  // Graceful shutdown
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    const server = await serverPromise;
+    server.close(async () => {
+      await databaseService.disconnect();
+      console.log('Process terminated');
+    });
   });
-});
 
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully');
-  const server = await serverPromise;
-  server.close(async () => {
-    await databaseService.disconnect();
-    console.log('Process terminated');
+  process.on('SIGINT', async () => {
+    console.log('SIGINT received, shutting down gracefully');
+    const server = await serverPromise;
+    server.close(async () => {
+      await databaseService.disconnect();
+      console.log('Process terminated');
+    });
   });
-});
+}
 
 module.exports = app;
