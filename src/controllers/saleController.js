@@ -1205,7 +1205,24 @@ class SaleController {
 
       // Group data
       let groupedData = [];
-      if (groupBy === 'cashier') {
+      if (groupBy === 'day') {
+        // Group by day
+        const dayMap = new Map();
+        sales.forEach(sale => {
+          const date = new Date(sale.createdAt).toISOString().split('T')[0];
+          if (!dayMap.has(date)) {
+            dayMap.set(date, {
+              date,
+              salesCount: 0,
+              revenue: 0
+            });
+          }
+          const data = dayMap.get(date);
+          data.salesCount++;
+          data.revenue += parseFloat(sale.grandTotal);
+        });
+        groupedData = Array.from(dayMap.values());
+      } else if (groupBy === 'cashier') {
         const cashierMap = new Map();
         sales.forEach(sale => {
           const cpf = sale.cashier.cpf;
@@ -1230,13 +1247,13 @@ class SaleController {
             if (!methodMap.has(payment.method)) {
               methodMap.set(payment.method, {
                 method: payment.method,
-                count: 0,
-                total: 0
+                salesCount: 0,
+                revenue: 0
               });
             }
             const data = methodMap.get(payment.method);
-            data.count++;
-            data.total += parseFloat(payment.amount);
+            data.salesCount++;
+            data.revenue += parseFloat(payment.amount);
           });
         });
         groupedData = Array.from(methodMap.values());
@@ -1246,10 +1263,11 @@ class SaleController {
         success: true,
         period: {
           startDate,
-          endDate
+          endDate,
+          groupBy
         },
         summary,
-        groupedData: groupBy !== 'day' ? groupedData : undefined,
+        groupedData,
         message: 'Sales report generated successfully'
       });
     } catch (error) {
@@ -1410,6 +1428,7 @@ class SaleController {
       });
 
       const weekRevenue = weekSales.reduce((sum, sale) => sum + parseFloat(sale.grandTotal), 0);
+      const weekTransactions = weekSales.length;
 
       // Get month revenue
       const monthSales = await db.sale.findMany({
@@ -1427,6 +1446,7 @@ class SaleController {
       });
 
       const monthRevenue = monthSales.reduce((sum, sale) => sum + parseFloat(sale.grandTotal), 0);
+      const monthTransactions = monthSales.length;
 
       // Get last month revenue for growth calculation
       const lastMonthSales = await db.sale.findMany({
@@ -1462,7 +1482,9 @@ class SaleController {
           todayTransactions,
           averageTicketPrice,
           weekRevenue,
+          weekTransactions,
           monthRevenue,
+          monthTransactions,
           growthPercentage
         }
       });

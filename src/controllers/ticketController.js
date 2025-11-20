@@ -668,7 +668,26 @@ class TicketController {
       // Group data based on groupBy parameter
       let groupedData = [];
 
-      if (groupBy === 'movie') {
+      if (groupBy === 'day') {
+        // Group by day
+        const dayMap = new Map();
+        tickets.forEach(ticket => {
+          const date = new Date(ticket.issuedAt).toISOString().split('T')[0];
+          if (!dayMap.has(date)) {
+            dayMap.set(date, {
+              date,
+              ticketCount: 0,
+              revenue: 0
+            });
+          }
+          const data = dayMap.get(date);
+          data.ticketCount++;
+          if (ticket.status !== 'REFUNDED') {
+            data.revenue += parseFloat(ticket.price);
+          }
+        });
+        groupedData = Array.from(dayMap.values());
+      } else if (groupBy === 'movie') {
         const movieMap = new Map();
         tickets.forEach(ticket => {
           const movieId = ticket.session.movie.id;
@@ -716,10 +735,11 @@ class TicketController {
         success: true,
         period: {
           startDate,
-          endDate
+          endDate,
+          groupBy
         },
         summary,
-        groupedData: groupBy !== 'day' ? groupedData : undefined,
+        groupedData,
         message: 'Sales report generated successfully'
       });
     } catch (error) {
