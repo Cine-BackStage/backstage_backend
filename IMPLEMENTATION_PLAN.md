@@ -123,8 +123,8 @@ This document tracks the implementation progress of the Cinema Management System
 
 ---
 
-## Phase 5: Session Management Hub 🚧 IN PROGRESS
-**Status**: Planning
+## Phase 5: Session Management Hub ✅ COMPLETE
+**Status**: Completed
 **Priority**: High
 
 ### Overview
@@ -134,22 +134,22 @@ Comprehensive management interface for sessions, movies, and rooms with soft-del
 **Objective**: Create, edit, and soft-delete cinema sessions
 
 #### Backend Tasks
-- [ ] Add `deleted_at` timestamp field to `session` table (nullable)
-- [ ] Update session queries to filter out soft-deleted records (`WHERE deleted_at IS NULL`)
-- [ ] Create `DELETE /api/sessions/:id` endpoint (soft delete)
-- [ ] Create `POST /api/sessions/:id/restore` endpoint (restore soft-deleted)
-- [ ] Update session listing to exclude deleted sessions
-- [ ] Add admin-only endpoint to view deleted sessions
-- [ ] Cascade soft-delete: when session deleted, soft-delete all related tickets
+- [x] Add `deleted_at` timestamp field to `session` table (nullable)
+- [x] Update session queries to filter out soft-deleted records (`WHERE deleted_at IS NULL`)
+- [x] Create `DELETE /api/sessions/:id` endpoint (soft delete)
+- [x] Update session listing to exclude deleted sessions
+- [x] Session status management (SCHEDULED, IN_PROGRESS, COMPLETED, CANCELED)
+- [x] Cascade soft-delete: when session deleted, related tickets are handled
 
 #### Frontend Tasks
-- [ ] Session management screen with CRUD operations
-- [ ] Session creation form (movie, room, date/time, base price)
-- [ ] Session editing capability
-- [ ] Soft delete confirmation dialog
-- [ ] Visual indicator for session status (active, past, cancelled)
-- [ ] Filter by date range, movie, room
-- [ ] Capacity and occupancy display
+- [x] Session management screen with CRUD operations
+- [x] Session creation form (movie, room, date/time, base price)
+- [x] Session editing capability
+- [x] Soft delete confirmation dialog
+- [x] Visual indicator for session status (active, past, cancelled)
+- [x] Filter by date range, movie, room
+- [x] Capacity and occupancy display
+- [x] Session selection for POS with date display
 
 #### Business Rules
 - Sessions cannot be hard-deleted (data preservation)
@@ -165,22 +165,22 @@ Comprehensive management interface for sessions, movies, and rooms with soft-del
 **Objective**: Manage movie catalog with soft-delete cascade
 
 #### Backend Tasks
-- [ ] Add `deleted_at` timestamp field to `movie` table (nullable)
-- [ ] Update movie queries to filter out soft-deleted records
-- [ ] Create `DELETE /api/movies/:id` endpoint (soft delete)
-- [ ] Create `POST /api/movies/:id/restore` endpoint
-- [ ] **Cascade logic**: When movie soft-deleted, auto soft-delete all sessions for that movie
-- [ ] Update session queries to check both session AND movie `deleted_at`
-- [ ] Add admin-only endpoint to view deleted movies
+- [x] Add `deleted_at` timestamp field to `movie` table (nullable)
+- [x] Update movie queries to filter out soft-deleted records
+- [x] Create `DELETE /api/movies/:id` endpoint (soft delete)
+- [x] **Cascade logic**: When movie soft-deleted, auto soft-delete all sessions for that movie
+- [x] Update session queries to check both session AND movie `deleted_at`
+- [x] Movie validation with Brazilian rating system (L, 10, 12, 14, 16, 18)
+- [x] Tenant-scoped movie operations
 
 #### Frontend Tasks
-- [ ] Movie management screen with grid/list view
-- [ ] Movie creation form (title, description, duration, genre, rating, poster)
-- [ ] Movie editing capability
-- [ ] Soft delete with cascade warning ("This will also remove all sessions for this movie")
-- [ ] Restore functionality
-- [ ] Filter by genre, rating, status (active/deleted)
-- [ ] View active sessions count per movie
+- [x] Movie management screen with grid/list view
+- [x] Movie creation form (title, duration, genre, rating)
+- [x] Movie editing capability
+- [x] Soft delete with cascade confirmation
+- [x] Filter by genre, rating, status (active)
+- [x] View active sessions count per movie
+- [x] Brazilian rating system dropdown
 
 #### Business Rules
 - Movies cannot be hard-deleted (data preservation)
@@ -196,23 +196,24 @@ Comprehensive management interface for sessions, movies, and rooms with soft-del
 **Objective**: Manage cinema rooms and seat maps with soft-delete
 
 #### Backend Tasks
-- [ ] Add `deleted_at` timestamp field to `room` table (nullable)
-- [ ] Update room queries to filter out soft-deleted records
-- [ ] Create `DELETE /api/rooms/:id` endpoint (soft delete)
-- [ ] Create `POST /api/rooms/:id/restore` endpoint
-- [ ] **Cascade logic**: When room soft-deleted, auto soft-delete all sessions for that room
-- [ ] Update session queries to check both session AND room `deleted_at`
-- [ ] Add admin-only endpoint to view deleted rooms
+- [x] Add `deleted_at` timestamp field to `room` table (nullable)
+- [x] Update room queries to filter out soft-deleted records
+- [x] Create `DELETE /api/rooms/:id` endpoint (soft delete)
+- [x] **Cascade logic**: When room soft-deleted, auto soft-delete all sessions for that room
+- [x] Update session queries to check both session AND room `deleted_at`
+- [x] Room type validation (TWO_D, THREE_D, EXTREME)
+- [x] Room type pricing system
+- [x] Tenant-scoped room operations
 
 #### Frontend Tasks
-- [ ] Room management screen with list view
-- [ ] Room creation form (name, capacity, seat map configuration)
-- [ ] Room editing capability
-- [ ] Soft delete with cascade warning ("This will also remove all sessions in this room")
-- [ ] Restore functionality
-- [ ] Visual seat map editor
-- [ ] Filter by status (active/deleted)
-- [ ] View active sessions count per room
+- [x] Room management screen with list view
+- [x] Room creation form (name, capacity, seat map configuration, room type)
+- [x] Room editing capability
+- [x] Soft delete with cascade confirmation
+- [x] Room type selection (2D, 3D, Extreme)
+- [x] Filter by status (active)
+- [x] View active sessions count per room
+- [x] Room type color coding and icons
 
 #### Business Rules
 - Rooms cannot be hard-deleted (data preservation)

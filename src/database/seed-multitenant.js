@@ -57,21 +57,21 @@ const COMPANIES = [
 const MOVIES_DATA = [
   // CineMax Movies
   [
-    { title: 'Action Hero 4', durationMin: 128, genre: 'Action', rating: '14+' },
-    { title: 'Space Adventure', durationMin: 145, genre: 'Sci-Fi', rating: '12+' },
+    { title: 'Action Hero 4', durationMin: 128, genre: 'Action', rating: '14' },
+    { title: 'Space Adventure', durationMin: 145, genre: 'Sci-Fi', rating: '12' },
     { title: 'Comedy Night', durationMin: 98, genre: 'Comedy', rating: 'L' }
   ],
   // MovieTime Movies
   [
-    { title: 'Drama of Hearts', durationMin: 112, genre: 'Drama', rating: '16+' },
-    { title: 'Horror Mansion', durationMin: 94, genre: 'Horror', rating: '18+' },
+    { title: 'Drama of Hearts', durationMin: 112, genre: 'Drama', rating: '16' },
+    { title: 'Horror Mansion', durationMin: 94, genre: 'Horror', rating: '18' },
     { title: 'Family Fun', durationMin: 88, genre: 'Family', rating: 'L' }
   ],
   // Premium Screens Movies
   [
-    { title: 'Art House Film', durationMin: 156, genre: 'Art', rating: '14+' },
+    { title: 'Art House Film', durationMin: 156, genre: 'Art', rating: '14' },
     { title: 'Documentary Earth', durationMin: 102, genre: 'Documentary', rating: 'L' },
-    { title: 'Indie Romance', durationMin: 95, genre: 'Romance', rating: '12+' }
+    { title: 'Indie Romance', durationMin: 95, genre: 'Romance', rating: '12' }
   ]
 ];
 

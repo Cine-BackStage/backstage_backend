@@ -121,7 +121,10 @@ class SessionController {
         limit = 50
       } = req.query;
 
-      const where = { companyId };
+      const where = {
+        companyId,
+        deletedAt: null // Exclude soft-deleted sessions
+      };
 
       // Advanced filtering
       if (status) {
@@ -148,7 +151,8 @@ class SessionController {
 
       if (roomType) {
         where.room = {
-          roomType
+          roomType,
+          deletedAt: null
         };
       }
 
@@ -822,6 +826,62 @@ class SessionController {
       res.status(500).json({
         success: false,
         message: 'Error deleting session',
+        error: error.message
+      });
+    }
+  }
+
+  async getSessionHistory(req, res) {
+    try {
+      const companyId = req.employee.companyId;
+
+      const deletedSessions = await db.session.findMany({
+        where: {
+          companyId,
+          deletedAt: {
+            not: null
+          }
+        },
+        include: {
+          movie: {
+            select: {
+              id: true,
+              title: true,
+              durationMin: true,
+              genre: true,
+              rating: true
+            }
+          },
+          room: {
+            select: {
+              id: true,
+              name: true,
+              capacity: true,
+              roomType: true
+            }
+          },
+          _count: {
+            select: {
+              tickets: true
+            }
+          }
+        },
+        orderBy: {
+          deletedAt: 'desc'
+        }
+      });
+
+      res.json({
+        success: true,
+        data: deletedSessions,
+        count: deletedSessions.length,
+        message: 'Deleted sessions history retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error fetching session history:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching session history',
         error: error.message
       });
     }

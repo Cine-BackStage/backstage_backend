@@ -815,4 +815,16 @@ router.get('/pricing/room-types', authenticateEmployee, roomController.getRoomTy
  */
 router.post('/pricing/room-types', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), roomController.setRoomTypePrice);
 
+/**
+ * @swagger
+ * /api/rooms/history:
+ *   get:
+ *     summary: Get deleted rooms history
+ *     tags: [Rooms]
+ *     responses:
+ *       200:
+ *         description: Deleted rooms history retrieved successfully
+ */
+router.get('/history/all', authenticateEmployee, roomController.getRoomHistory);
+
 module.exports = router;

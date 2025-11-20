@@ -332,4 +332,16 @@ router.patch('/:id/status', authenticateEmployee, sessionController.updateSessio
  */
 router.delete('/:id', authenticateEmployee, authorizeRoles('MANAGER', 'ADMIN'), sessionController.deleteSession);
 
+/**
+ * @swagger
+ * /api/sessions/history:
+ *   get:
+ *     summary: Get deleted sessions history
+ *     tags: [Sessions]
+ *     responses:
+ *       200:
+ *         description: Deleted sessions history retrieved successfully
+ */
+router.get('/history/all', authenticateEmployee, sessionController.getSessionHistory);
+
 module.exports = router;

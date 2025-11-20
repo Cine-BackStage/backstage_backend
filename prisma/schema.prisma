@@ -265,6 +265,7 @@ model Movie {
   posterUrl   String?   @map("poster_url") @db.VarChar(500)
   releaseDate DateTime? @map("release_date") @db.Date
   isActive    Boolean   @default(true) @map("is_active")
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamp(6)
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
@@ -274,6 +275,7 @@ model Movie {
 
   @@index([companyId])
   @@index([companyId, isActive])
+  @@index([companyId, deletedAt])
   @@map("movie")
 }
 
@@ -314,15 +316,16 @@ model Seat {
 }
 
 model Room {
-  id        String   @id @default(uuid()) @db.Uuid
-  companyId String   @map("company_id") @db.Uuid
-  name      String   @db.VarChar(80)
+  id        String    @id @default(uuid()) @db.Uuid
+  companyId String    @map("company_id") @db.Uuid
+  name      String    @db.VarChar(80)
   capacity  Int
-  roomType  RoomType @map("room_type")
-  seatMapId String?  @map("seat_map_id") @db.Uuid
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  roomType  RoomType  @map("room_type")
+  seatMapId String?   @map("seat_map_id") @db.Uuid
+  isActive  Boolean   @default(true) @map("is_active")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamp(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
   // Relations
   company  Company   @relation(fields: [companyId], references: [id])
@@ -332,6 +335,7 @@ model Room {
   @@unique([companyId, name]) // Room name unique within company
   @@index([companyId])
   @@index([companyId, isActive])
+  @@index([companyId, deletedAt])
   @@map("room")
 }
 
@@ -357,6 +361,7 @@ model Session {
   endTime   DateTime      @map("end_time") @db.Timestamp(6)
   basePrice Decimal?      @map("base_price") @db.Decimal(10, 2) // Can override room type price
   status    SessionStatus @default(SCHEDULED)
+  deletedAt DateTime?     @map("deleted_at") @db.Timestamp(6)
   createdAt DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
@@ -371,6 +376,7 @@ model Session {
   @@index([companyId, movieId])
   @@index([companyId, roomId])
   @@index([companyId, startTime])
+  @@index([companyId, deletedAt])
   @@map("session")
 }
 

@@ -56,7 +56,10 @@ class RoomController {
       const companyId = req.employee.companyId;
       const { isActive, roomType } = req.query;
 
-      const where = { companyId };
+      const where = {
+        companyId,
+        deletedAt: null // Exclude soft-deleted rooms
+      };
 
       if (isActive !== undefined) {
         where.isActive = isActive === 'true';
@@ -78,7 +81,11 @@ class RoomController {
           },
           _count: {
             select: {
-              sessions: true
+              sessions: {
+                where: {
+                  deletedAt: null
+                }
+              }
             }
           }
         },
@@ -110,7 +117,8 @@ class RoomController {
       const room = await db.room.findFirst({
         where: {
           id,
-          companyId
+          companyId,
+          deletedAt: null
         },
         include: {
           seatMap: {
@@ -126,6 +134,7 @@ class RoomController {
           },
           sessions: {
             where: {
+              deletedAt: null,
               startTime: {
                 gte: new Date()
               }
@@ -320,15 +329,18 @@ class RoomController {
     try {
       const { id } = req.params;
       const companyId = req.employee.companyId;
-      const { permanent } = req.query;
 
-      // Check if room exists
+      // Check if room exists and get associated sessions
       const room = await db.room.findFirst({
-        where: { id, companyId },
+        where: {
+          id,
+          companyId
+        },
         include: {
-          _count: {
-            select: {
-              sessions: true
+          sessions: {
+            where: {
+              companyId,
+              deletedAt: null
             }
           }
         }
@@ -341,36 +353,39 @@ class RoomController {
         });
       }
 
-      // Check if room has sessions
-      if (room._count.sessions > 0 && permanent === 'true') {
-        return res.status(409).json({
-          success: false,
-          message: 'Cannot permanently delete room with existing sessions. Use soft delete instead.'
+      // Soft delete the room
+      const now = new Date();
+      const updatedRoom = await db.room.update({
+        where: { id },
+        data: {
+          deletedAt: now,
+          isActive: false
+        }
+      });
+
+      // Cascade soft delete to all associated sessions
+      if (room.sessions.length > 0) {
+        await db.session.updateMany({
+          where: {
+            roomId: id,
+            companyId,
+            deletedAt: null
+          },
+          data: {
+            deletedAt: now,
+            status: 'CANCELED'
+          }
         });
       }
 
-      if (permanent === 'true') {
-        // Hard delete
-        await db.room.delete({
-          where: { id }
-        });
-
-        res.json({
-          success: true,
-          message: 'Room permanently deleted'
-        });
-      } else {
-        // Soft delete
-        await db.room.update({
-          where: { id },
-          data: { isActive: false }
-        });
-
-        res.json({
-          success: true,
-          message: 'Room deactivated successfully'
-        });
-      }
+      res.json({
+        success: true,
+        data: updatedRoom,
+        message: `Room soft deleted successfully. ${room.sessions.length} associated session(s) also soft deleted.`,
+        cascadeInfo: {
+          deletedSessions: room.sessions.length
+        }
+      });
     } catch (error) {
       console.error('Error deleting room:', error);
       res.status(500).json({
@@ -758,6 +773,48 @@ class RoomController {
       res.status(500).json({
         success: false,
         message: 'Error setting room type price',
+        error: error.message
+      });
+    }
+  }
+
+  // ===== ROOM HISTORY =====
+
+  async getRoomHistory(req, res) {
+    try {
+      const companyId = req.employee.companyId;
+
+      const deletedRooms = await db.room.findMany({
+        where: {
+          companyId,
+          deletedAt: {
+            not: null
+          }
+        },
+        include: {
+          seatMap: true,
+          _count: {
+            select: {
+              sessions: true
+            }
+          }
+        },
+        orderBy: {
+          deletedAt: 'desc'
+        }
+      });
+
+      res.json({
+        success: true,
+        data: deletedRooms,
+        count: deletedRooms.length,
+        message: 'Deleted rooms history retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error fetching room history:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching room history',
         error: error.message
       });
     }

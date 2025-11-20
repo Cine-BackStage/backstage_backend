@@ -82,8 +82,9 @@ const movieSchema = Joi.object({
   duration_min: Joi.number().integer().positive().required(),
   genre: Joi.string().max(80).optional(),
   description: Joi.string().optional(),
-  rating: Joi.string().max(10).valid('G', 'PG', 'PG-13', 'R', 'NC-17', 'NR').optional(),
+  rating: Joi.string().max(10).valid('L', '10', '12', '14', '16', '18').optional(),
   poster_url: Joi.string().uri().max(500).optional(),
+  release_date: Joi.date().iso().optional(),
   is_active: Joi.boolean().optional()
 });
 

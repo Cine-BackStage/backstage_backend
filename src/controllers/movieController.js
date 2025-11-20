@@ -7,7 +7,8 @@ class MovieController {
       const companyId = req.employee.companyId; // Get from authenticated employee
 
       const where = {
-        companyId // Add tenant scoping
+        companyId, // Add tenant scoping
+        deletedAt: null // Exclude soft-deleted movies
       };
 
       // Apply filters
@@ -35,6 +36,7 @@ class MovieController {
           sessions: {
             where: {
               companyId, // Ensure sessions are also tenant-scoped
+              deletedAt: null, // Exclude soft-deleted sessions
               startTime: {
                 gte: new Date()
               }
@@ -78,13 +80,15 @@ class MovieController {
 
       const movie = await db.movie.findFirst({
         where: {
-          id: parseInt(id),
-          companyId
+          id,
+          companyId,
+          deletedAt: null
         },
         include: {
           sessions: {
             where: {
-              companyId
+              companyId,
+              deletedAt: null
             },
             orderBy: {
               startTime: 'asc'
@@ -136,6 +140,7 @@ class MovieController {
       const movies = await db.movie.findMany({
         where: {
           companyId,
+          deletedAt: null,
           title: {
             contains: title,
             mode: 'insensitive'
@@ -144,7 +149,8 @@ class MovieController {
         include: {
           sessions: {
             where: {
-              companyId
+              companyId,
+              deletedAt: null
             },
             orderBy: {
               startTime: 'asc'
@@ -215,6 +221,7 @@ class MovieController {
           description: value.description,
           rating: value.rating,
           posterUrl: value.poster_url,
+          releaseDate: value.release_date,
           isActive: value.is_active !== undefined ? value.is_active : true
         }
       });
@@ -249,14 +256,40 @@ class MovieController {
         });
       }
 
+      // Map snake_case validation fields to camelCase Prisma fields
+      const updateData = {};
+      if (value.title !== undefined) updateData.title = value.title;
+      if (value.duration_min !== undefined) updateData.durationMin = value.duration_min;
+      if (value.genre !== undefined) updateData.genre = value.genre;
+      if (value.description !== undefined) updateData.description = value.description;
+      if (value.rating !== undefined) updateData.rating = value.rating;
+      if (value.poster_url !== undefined) updateData.posterUrl = value.poster_url;
+      if (value.release_date !== undefined) updateData.releaseDate = value.release_date;
+      if (value.is_active !== undefined) updateData.isActive = value.is_active;
+
+      // First verify the movie belongs to this company
+      const existingMovie = await db.movie.findUnique({
+        where: { id },
+        select: { companyId: true }
+      });
+
+      if (!existingMovie) {
+        return res.status(404).json({
+          success: false,
+          message: 'Movie not found'
+        });
+      }
+
+      if (existingMovie.companyId !== companyId) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to update this movie'
+        });
+      }
+
       const movie = await db.movie.update({
-        where: {
-          companyId_id: {
-            companyId,
-            id: parseInt(id)
-          }
-        },
-        data: value
+        where: { id },
+        data: updateData
       });
 
       if (!movie) {
@@ -285,29 +318,21 @@ class MovieController {
     try {
       const { id } = req.params;
       const companyId = req.employee.companyId;
-      const { hard_delete } = req.query;
 
-      let movie;
-      if (hard_delete === 'true') {
-        movie = await db.movie.delete({
-          where: {
-            companyId_id: {
+      // Check if movie exists
+      const movie = await db.movie.findUnique({
+        where: {
+          id
+        },
+        include: {
+          sessions: {
+            where: {
               companyId,
-              id: parseInt(id)
+              deletedAt: null
             }
           }
-        });
-      } else {
-        movie = await db.movie.update({
-          where: {
-            companyId_id: {
-              companyId,
-              id: parseInt(id)
-            }
-          },
-          data: { isActive: false }
-        });
-      }
+        }
+      });
 
       if (!movie) {
         return res.status(404).json({
@@ -316,20 +341,43 @@ class MovieController {
         });
       }
 
+      // Soft delete the movie
+      const now = new Date();
+      const updatedMovie = await db.movie.update({
+        where: {
+          id
+        },
+        data: {
+          deletedAt: now,
+          isActive: false
+        }
+      });
+
+      // Cascade soft delete to all associated sessions
+      if (movie.sessions.length > 0) {
+        await db.session.updateMany({
+          where: {
+            movieId: id,
+            companyId,
+            deletedAt: null
+          },
+          data: {
+            deletedAt: now,
+            status: 'CANCELED'
+          }
+        });
+      }
+
       res.json({
         success: true,
-        data: movie,
-        message: hard_delete === 'true' ? 'Movie permanently deleted' : 'Movie deactivated successfully'
+        data: updatedMovie,
+        message: `Movie soft deleted successfully. ${movie.sessions.length} associated session(s) also soft deleted.`,
+        cascadeInfo: {
+          deletedSessions: movie.sessions.length
+        }
       });
     } catch (error) {
       console.error('Error deleting movie:', error);
-
-      if (error.message.includes('existing sessions')) {
-        return res.status(409).json({
-          success: false,
-          message: error.message
-        });
-      }
 
       res.status(500).json({
         success: false,
@@ -344,22 +392,30 @@ class MovieController {
       const { id } = req.params;
       const companyId = req.employee.companyId;
 
-      const movie = await db.movie.update({
-        where: {
-          companyId_id: {
-            companyId,
-            id: parseInt(id)
-          }
-        },
-        data: { isActive: true }
+      // First verify the movie belongs to this company
+      const existingMovie = await db.movie.findUnique({
+        where: { id },
+        select: { companyId: true }
       });
 
-      if (!movie) {
+      if (!existingMovie) {
         return res.status(404).json({
           success: false,
           message: 'Movie not found'
         });
       }
+
+      if (existingMovie.companyId !== companyId) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to activate this movie'
+        });
+      }
+
+      const movie = await db.movie.update({
+        where: { id },
+        data: { isActive: true }
+      });
 
       res.json({
         success: true,
@@ -383,10 +439,7 @@ class MovieController {
 
       const movie = await db.movie.findUnique({
         where: {
-          companyId_id: {
-            companyId,
-            id: parseInt(id)
-          }
+          id
         },
         include: {
           sessions: {
@@ -425,6 +478,57 @@ class MovieController {
       res.status(500).json({
         success: false,
         message: 'Error fetching movie statistics',
+        error: error.message
+      });
+    }
+  }
+
+  async getMovieHistory(req, res) {
+    try {
+      const companyId = req.employee.companyId;
+
+      const deletedMovies = await db.movie.findMany({
+        where: {
+          companyId,
+          deletedAt: {
+            not: null
+          }
+        },
+        include: {
+          sessions: {
+            where: {
+              companyId,
+              deletedAt: {
+                not: null
+              }
+            },
+            orderBy: {
+              startTime: 'asc'
+            }
+          }
+        },
+        orderBy: {
+          deletedAt: 'desc'
+        }
+      });
+
+      const moviesWithStats = deletedMovies.map(movie => ({
+        ...movie,
+        total_sessions: movie.sessions.length,
+        upcoming_sessions: 0
+      }));
+
+      res.json({
+        success: true,
+        data: moviesWithStats,
+        count: moviesWithStats.length,
+        message: 'Deleted movies history retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error fetching movie history:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching movie history',
         error: error.message
       });
     }

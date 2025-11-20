@@ -33,8 +33,8 @@ const { authenticateEmployee } = require('../middleware/auth-multitenant');
  *           description: Movie description
  *         rating:
  *           type: string
- *           enum: [G, PG, PG-13, R, NC-17, NR]
- *           description: Movie rating
+ *           enum: [L, 10, 12, 14, 16, 18]
+ *           description: Movie rating (Brazilian classification)
  *         poster_url:
  *           type: string
  *           maxLength: 500
@@ -62,7 +62,7 @@ const { authenticateEmployee } = require('../middleware/auth-multitenant');
  *         duration_min: 192
  *         genre: "Action/Adventure"
  *         description: "Set more than a decade after the events of the first film..."
- *         rating: "PG-13"
+ *         rating: "12"
  *         poster_url: "https://example.com/avatar2-poster.jpg"
  *         is_active: true
  *         total_sessions: 5
@@ -274,7 +274,7 @@ router.get('/:id/stats', authenticateEmployee, movieController.getMovieStats);
  *                 type: string
  *               rating:
  *                 type: string
- *                 enum: [G, PG, PG-13, R, NC-17, NR]
+ *                 enum: [L, 10, 12, 14, 16, 18]
  *               poster_url:
  *                 type: string
  *                 maxLength: 500
@@ -286,7 +286,7 @@ router.get('/:id/stats', authenticateEmployee, movieController.getMovieStats);
  *             duration_min: 192
  *             genre: "Action/Adventure"
  *             description: "Set more than a decade after the events of the first film..."
- *             rating: "PG-13"
+ *             rating: "12"
  *             poster_url: "https://example.com/avatar2-poster.jpg"
  *     responses:
  *       201:
@@ -344,7 +344,7 @@ router.post('/', authenticateEmployee, movieController.createMovie);
  *                 type: string
  *               rating:
  *                 type: string
- *                 enum: [G, PG, PG-13, R, NC-17, NR]
+ *                 enum: [L, 10, 12, 14, 16, 18]
  *               poster_url:
  *                 type: string
  *                 maxLength: 500
@@ -447,5 +447,17 @@ router.delete('/:id', authenticateEmployee, movieController.deleteMovie);
  *         $ref: '#/components/responses/NotFound'
  */
 router.patch('/:id/activate', authenticateEmployee, movieController.activateMovie);
+
+/**
+ * @swagger
+ * /api/movies/history:
+ *   get:
+ *     summary: Get deleted movies history
+ *     tags: [Movies]
+ *     responses:
+ *       200:
+ *         description: Deleted movies history retrieved successfully
+ */
+router.get('/history/all', authenticateEmployee, movieController.getMovieHistory);
 
 module.exports = router;
