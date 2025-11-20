@@ -12,6 +12,7 @@ const inventoryRoutes = require('./inventory');
 const customerRoutes = require('./customers');
 const discountRoutes = require('./discounts');
 const seatReservationRoutes = require('./seatReservations');
+const seedRoutes = require('./seed');
 
 // Mount route modules
 router.use('/sessions', sessionRoutes);
@@ -25,6 +26,7 @@ router.use('/inventory', inventoryRoutes);
 router.use('/customers', customerRoutes);
 router.use('/discounts', discountRoutes);
 router.use('/seat-reservations', seatReservationRoutes);
+router.use('/seed', seedRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
